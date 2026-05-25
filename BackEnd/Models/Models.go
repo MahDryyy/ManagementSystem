@@ -1,0 +1,122 @@
+package Models
+
+import "time"
+
+// --- Konstanta Khanza (reg_periksa.status_lanjut, pasien.jk) ---
+
+const (
+	StatusLanjutRalan = "Ralan" // Rawat jalan
+	StatusLanjutRanap = "Ranap" // Rawat inap
+
+	JenisKelaminLaki  = "L"
+	JenisKelaminPerempuan = "P"
+)
+
+// Kategori umur untuk chart dashboard (dihitung dari tgl_lahir).
+const (
+	KategoriUmurBayiBaruLahir = "Bayi Baru Lahir" // 0–12 bulan
+	KategoriUmurBalita        = "Balita"          // 1–6 tahun
+	KategoriUmurPendidikan    = "Usia Pendidikan" // 7–15 tahun
+	KategoriUmurProduktif     = "Usia Produktif"  // 16–64 tahun
+	KategoriUmurLanjut        = "Usia Lanjut"     // 65 tahun ke atas
+)
+
+// --- Entitas tabel SIMRS Khanza ---
+
+// Pasien memetakan tabel `pasien`.
+type Pasien struct {
+	NoRkmMedis string    `json:"no_rkm_medis" db:"no_rkm_medis"`
+	NmPasien   string    `json:"nm_pasien" db:"nm_pasien"`
+	Jk         string    `json:"jk" db:"jk"`
+	TglLahir   time.Time `json:"tgl_lahir" db:"tgl_lahir"`
+	NoTlp      string    `json:"no_tlp" db:"no_tlp"`
+	Alamat     string    `json:"alamat,omitempty" db:"alamat"`
+	TglDaftar  time.Time `json:"tgl_daftar,omitempty" db:"tgl_daftar"`
+}
+
+// RegPeriksa memetakan tabel `reg_periksa` (kunjungan/registrasi).
+type RegPeriksa struct {
+	NoRawat       string    `json:"no_rawat" db:"no_rawat"`
+	NoRkmMedis    string    `json:"no_rkm_medis" db:"no_rkm_medis"`
+	TglRegistrasi time.Time `json:"tgl_registrasi" db:"tgl_registrasi"`
+	JamReg        string    `json:"jam_reg" db:"jam_reg"`
+	KdDokter      string    `json:"kd_dokter" db:"kd_dokter"`
+	KdPoli        string    `json:"kd_poli" db:"kd_poli"`
+	KdPj          string    `json:"kd_pj" db:"kd_pj"`
+	StatusLanjut  string    `json:"status_lanjut" db:"status_lanjut"` // Ralan | Ranap
+	Stts          string    `json:"stts" db:"stts"`                   // Belum | Sudah | Batal, dll.
+}
+
+// Penjab memetakan tabel `penjab` (cara bayar: BPJS, Umum, dll.).
+type Penjab struct {
+	KdPj     string `json:"kd_pj" db:"kd_pj"`
+	PngJawab string `json:"png_jawab" db:"png_jawab"`
+}
+
+// DiagnosaPasien memetakan tabel `diagnosa_pasien`.
+type DiagnosaPasien struct {
+	NoRawat    string `json:"no_rawat" db:"no_rawat"`
+	KdPenyakit string `json:"kd_penyakit" db:"kd_penyakit"`
+	NmPenyakit string `json:"nm_penyakit" db:"nm_penyakit"` // dari JOIN penyakit
+	Status     string `json:"status" db:"status"`           // Ralan | Ranap
+}
+
+// --- Response dashboard (agregat dari query) ---
+
+// DashboardRingkasan kartu atas: total pasien, rawat jalan, rawat inap.
+type DashboardRingkasan struct {
+	TotalPasienTerdaftar int `json:"total_pasien_terdaftar"`
+	PasienRawatJalan     int `json:"pasien_rawat_jalan"`
+	PasienRawatInap      int `json:"pasien_rawat_inap"`
+}
+
+// KategoriUmurItem satu slice pie chart kategori umur.
+type KategoriUmurItem struct {
+	Kategori string `json:"kategori"`
+	Jumlah   int    `json:"jumlah"`
+}
+
+// StatusPerawatan kartu status perawatan aktif.
+type StatusPerawatan struct {
+	TotalAktif      int `json:"total_aktif"`
+	RawatInapAktif  int `json:"rawat_inap_aktif"`
+	RawatJalanAktif int `json:"rawat_jalan_aktif"`
+}
+
+// DashboardPasien gabungan semua data dashboard pasien.
+type DashboardPasien struct {
+	Ringkasan       DashboardRingkasan `json:"ringkasan"`
+	KategoriUmur    []KategoriUmurItem `json:"kategori_umur"`
+	StatusPerawatan StatusPerawatan    `json:"status_perawatan"`
+	DaftarPasien    []PasienBaris      `json:"daftar_pasien"`
+}
+
+// PasienBaris satu baris tabel daftar pasien di dashboard.
+type PasienBaris struct {
+	ID           string    `json:"id"`            // no_rkm_medis
+	Nama         string    `json:"nama"`
+	NoTelepon    string    `json:"no_telepon"`
+	Diagnosa     string    `json:"diagnosa"`
+	TglLahir     time.Time `json:"tgl_lahir"`
+	Umur         int       `json:"umur"`          // tahun, dihitung saat query
+	JenisKelamin string    `json:"jenis_kelamin"` // Laki-laki | Perempuan (label UI)
+	Rawat        string    `json:"rawat"`         // Rawat Inap | Rawat Jalan
+	Penjamin     string    `json:"penjamin"`      // BPJS, Umum, dll. (png_jawab)
+	NoRawat      string    `json:"no_rawat,omitempty"`
+}
+
+// PasienFilter parameter pencarian & filter daftar pasien.
+type PasienFilter struct {
+	Cari         string `json:"cari"`          // nama, no_ktp, alamat, atau no_rkm_medis
+	NoRkmMedis   string `json:"no_rkm_medis"`
+	JenisKelamin string `json:"jenis_kelamin"` // L | P
+	StatusLanjut string `json:"status_lanjut"` // Ralan | Ranap | kosong = semua
+	Limit        int    `json:"limit"`
+	Offset       int    `json:"offset"`
+}
+
+// DaftarPasienResponse hasil paginasi daftar pasien.
+type DaftarPasienResponse struct {
+	Data  []PasienBaris `json:"data"`
+	Total int           `json:"total"`
+}
