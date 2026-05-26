@@ -1,16 +1,16 @@
 package services
 
 import (
-	"BackEnd/Models"
-	"BackEnd/Repositories"
+	ModelsPasien "BackEnd/Models"
+	repositories "BackEnd/Repositories"
 )
 
 type DashboardService interface {
-	GetDashboard(filter Models.PasienFilter) (Models.DashboardPasien, error)
-	GetRingkasan() (Models.DashboardRingkasan, error)
-	GetKategoriUmur() ([]Models.KategoriUmurItem, error)
-	GetStatusPerawatan() (Models.StatusPerawatan, error)
-	GetDaftarPasien(filter Models.PasienFilter) (Models.DaftarPasienResponse, error)
+	GetDashboard(filter ModelsPasien.PasienFilter) (ModelsPasien.DashboardPasien, error)
+	GetRingkasan() (ModelsPasien.DashboardRingkasan, error)
+	GetKategoriUmur(periode string) ([]ModelsPasien.KategoriUmurItem, error)
+	GetStatusPerawatan() (ModelsPasien.StatusPerawatan, error)
+	GetDaftarPasien(filter ModelsPasien.PasienFilter) (ModelsPasien.DaftarPasienResponse, error)
 }
 
 type dashboardService struct {
@@ -21,32 +21,32 @@ func NewDashboardService(repo repositories.DashboardRepository) DashboardService
 	return &dashboardService{repo: repo}
 }
 
-func (s *dashboardService) GetDashboard(filter Models.PasienFilter) (Models.DashboardPasien, error) {
+func (s *dashboardService) GetDashboard(filter ModelsPasien.PasienFilter) (ModelsPasien.DashboardPasien, error) {
 	if filter.Limit <= 0 {
 		filter.Limit = 20
 	}
 
 	ringkasan, err := s.repo.GetRingkasan()
 	if err != nil {
-		return Models.DashboardPasien{}, err
+		return ModelsPasien.DashboardPasien{}, err
 	}
 
-	kategoriUmur, err := s.repo.GetKategoriUmur()
+	kategoriUmur, err := s.repo.GetKategoriUmur(ModelsPasien.PeriodeSemuaWaktu)
 	if err != nil {
-		return Models.DashboardPasien{}, err
+		return ModelsPasien.DashboardPasien{}, err
 	}
 
 	statusPerawatan, err := s.repo.GetStatusPerawatan()
 	if err != nil {
-		return Models.DashboardPasien{}, err
+		return ModelsPasien.DashboardPasien{}, err
 	}
 
 	daftar, _, err := s.repo.GetDaftarPasien(filter)
 	if err != nil {
-		return Models.DashboardPasien{}, err
+		return ModelsPasien.DashboardPasien{}, err
 	}
 
-	return Models.DashboardPasien{
+	return ModelsPasien.DashboardPasien{
 		Ringkasan:       ringkasan,
 		KategoriUmur:    kategoriUmur,
 		StatusPerawatan: statusPerawatan,
@@ -54,25 +54,25 @@ func (s *dashboardService) GetDashboard(filter Models.PasienFilter) (Models.Dash
 	}, nil
 }
 
-func (s *dashboardService) GetRingkasan() (Models.DashboardRingkasan, error) {
+func (s *dashboardService) GetRingkasan() (ModelsPasien.DashboardRingkasan, error) {
 	return s.repo.GetRingkasan()
 }
 
-func (s *dashboardService) GetKategoriUmur() ([]Models.KategoriUmurItem, error) {
-	return s.repo.GetKategoriUmur()
+func (s *dashboardService) GetKategoriUmur(periode string) ([]ModelsPasien.KategoriUmurItem, error) {
+	return s.repo.GetKategoriUmur(periode)
 }
 
-func (s *dashboardService) GetStatusPerawatan() (Models.StatusPerawatan, error) {
+func (s *dashboardService) GetStatusPerawatan() (ModelsPasien.StatusPerawatan, error) {
 	return s.repo.GetStatusPerawatan()
 }
 
-func (s *dashboardService) GetDaftarPasien(filter Models.PasienFilter) (Models.DaftarPasienResponse, error) {
+func (s *dashboardService) GetDaftarPasien(filter ModelsPasien.PasienFilter) (ModelsPasien.DaftarPasienResponse, error) {
 	if filter.Limit <= 0 {
 		filter.Limit = 20
 	}
 	data, total, err := s.repo.GetDaftarPasien(filter)
 	if err != nil {
-		return Models.DaftarPasienResponse{}, err
+		return ModelsPasien.DaftarPasienResponse{}, err
 	}
-	return Models.DaftarPasienResponse{Data: data, Total: total}, nil
+	return ModelsPasien.DaftarPasienResponse{Data: data, Total: total}, nil
 }

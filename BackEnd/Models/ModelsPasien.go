@@ -1,4 +1,4 @@
-package Models
+package ModelsPasien
 
 import "time"
 
@@ -8,17 +8,17 @@ const (
 	StatusLanjutRalan = "Ralan" // Rawat jalan
 	StatusLanjutRanap = "Ranap" // Rawat inap
 
-	JenisKelaminLaki  = "L"
+	JenisKelaminLaki      = "L"
 	JenisKelaminPerempuan = "P"
 )
 
 // Kategori umur untuk chart dashboard (dihitung dari tgl_lahir).
 const (
-	KategoriUmurBayiBaruLahir = "Bayi Baru Lahir" // 0–12 bulan
-	KategoriUmurBalita        = "Balita"          // 1–6 tahun
-	KategoriUmurPendidikan    = "Usia Pendidikan" // 7–15 tahun
-	KategoriUmurProduktif     = "Usia Produktif"  // 16–64 tahun
-	KategoriUmurLanjut        = "Usia Lanjut"     // 65 tahun ke atas
+	KategoriUmurBayiBaruLahir = "Bayi Baru Lahir 0–12 bulan"   // 0–12 bulan
+	KategoriUmurBalita        = "Balita 1–6 tahun"             // 1–6 tahun
+	KategoriUmurPendidikan    = "Usia Pendidikan 7–15 tahun"   // 7–15 tahun
+	KategoriUmurProduktif     = "Usia Produktif 16–64 tahun"   // 16–64 tahun
+	KategoriUmurLanjut        = "Usia Lanjut 65 tahun ke atas" // 65 tahun ke atas
 )
 
 // --- Entitas tabel SIMRS Khanza ---
@@ -93,7 +93,7 @@ type DashboardPasien struct {
 
 // PasienBaris satu baris tabel daftar pasien di dashboard.
 type PasienBaris struct {
-	ID           string    `json:"id"`            // no_rkm_medis
+	ID           string    `json:"id"` // no_rkm_medis
 	Nama         string    `json:"nama"`
 	NoTelepon    string    `json:"no_telepon"`
 	Diagnosa     string    `json:"diagnosa"`
@@ -107,7 +107,7 @@ type PasienBaris struct {
 
 // PasienFilter parameter pencarian & filter daftar pasien.
 type PasienFilter struct {
-	Cari         string `json:"cari"`          // nama, no_ktp, alamat, atau no_rkm_medis
+	Cari         string `json:"cari"` // nama, no_ktp, alamat, atau no_rkm_medis
 	NoRkmMedis   string `json:"no_rkm_medis"`
 	JenisKelamin string `json:"jenis_kelamin"` // L | P
 	StatusLanjut string `json:"status_lanjut"` // Ralan | Ranap | kosong = semua

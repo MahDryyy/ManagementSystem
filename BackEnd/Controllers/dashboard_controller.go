@@ -1,10 +1,11 @@
 package controllers
 
 import (
-	"BackEnd/Models"
+	ModelsPasien "BackEnd/Models"
 	"BackEnd/Services"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -38,9 +39,14 @@ func (ctrl *DashboardController) GetRingkasan(c *gin.Context) {
 }
 
 func (ctrl *DashboardController) GetKategoriUmur(c *gin.Context) {
-	data, err := ctrl.svc.GetKategoriUmur()
+	periode := c.DefaultQuery("periode", ModelsPasien.PeriodeBulanIni)
+	data, err := ctrl.svc.GetKategoriUmur(periode)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		status := http.StatusInternalServerError
+		if strings.Contains(err.Error(), "periode tidak valid") {
+			status = http.StatusBadRequest
+		}
+		c.JSON(status, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusOK, data)
@@ -66,11 +72,11 @@ func (ctrl *DashboardController) GetDaftarPasien(c *gin.Context) {
 	c.JSON(http.StatusOK, data)
 }
 
-func parsePasienFilter(c *gin.Context) Models.PasienFilter {
+func parsePasienFilter(c *gin.Context) ModelsPasien.PasienFilter {
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
 
-	return Models.PasienFilter{
+	return ModelsPasien.PasienFilter{
 		Cari:         c.Query("cari"),
 		NoRkmMedis:   c.Query("no_rkm_medis"),
 		JenisKelamin: c.Query("jenis_kelamin"),

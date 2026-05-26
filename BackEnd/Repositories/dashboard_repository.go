@@ -8,10 +8,10 @@ import (
 )
 
 type DashboardRepository interface {
-	GetRingkasan() (Models.DashboardRingkasan, error)
-	GetKategoriUmur() ([]Models.KategoriUmurItem, error)
-	GetStatusPerawatan() (Models.StatusPerawatan, error)
-	GetDaftarPasien(filter Models.PasienFilter) ([]Models.PasienBaris, int, error)
+	GetRingkasan() (ModelsPasien.DashboardRingkasan, error)
+	GetKategoriUmur(periode string) ([]ModelsPasien.KategoriUmurItem, error)
+	GetStatusPerawatan() (ModelsPasien.StatusPerawatan, error)
+	GetDaftarPasien(filter ModelsPasien.PasienFilter) ([]ModelsPasien.PasienBaris, int, error)
 }
 
 type dashboardRepository struct {
@@ -22,8 +22,8 @@ func NewDashboardRepository(db *sql.DB) DashboardRepository {
 	return &dashboardRepository{db: db}
 }
 
-func (r *dashboardRepository) GetRingkasan() (Models.DashboardRingkasan, error) {
-	var ringkasan Models.DashboardRingkasan
+func (r *dashboardRepository) GetRingkasan() (ModelsPasien.DashboardRingkasan, error) {
+	var ringkasan ModelsPasien.DashboardRingkasan
 
 	if err := r.db.QueryRow(`SELECT COUNT(*) FROM pasien`).Scan(&ringkasan.TotalPasienTerdaftar); err != nil {
 		return ringkasan, fmt.Errorf("total pasien: %w", err)
@@ -31,14 +31,14 @@ func (r *dashboardRepository) GetRingkasan() (Models.DashboardRingkasan, error) 
 
 	if err := r.db.QueryRow(
 		`SELECT COUNT(*) FROM reg_periksa WHERE status_lanjut = ?`,
-		Models.StatusLanjutRalan,
+		ModelsPasien.StatusLanjutRalan,
 	).Scan(&ringkasan.PasienRawatJalan); err != nil {
 		return ringkasan, fmt.Errorf("rawat jalan: %w", err)
 	}
 
 	if err := r.db.QueryRow(
 		`SELECT COUNT(*) FROM reg_periksa WHERE status_lanjut = ?`,
-		Models.StatusLanjutRanap,
+		ModelsPasien.StatusLanjutRanap,
 	).Scan(&ringkasan.PasienRawatInap); err != nil {
 		return ringkasan, fmt.Errorf("rawat inap: %w", err)
 	}
@@ -46,66 +46,96 @@ func (r *dashboardRepository) GetRingkasan() (Models.DashboardRingkasan, error) 
 	return ringkasan, nil
 }
 
-func (r *dashboardRepository) GetKategoriUmur() ([]Models.KategoriUmurItem, error) {
-	rows, err := r.db.Query(`
-		SELECT
-			CASE
-				WHEN TIMESTAMPDIFF(MONTH, tgl_lahir, CURDATE()) <= 12 THEN ?
-				WHEN TIMESTAMPDIFF(MONTH, tgl_lahir, CURDATE()) > 12
-					AND TIMESTAMPDIFF(YEAR, tgl_lahir, CURDATE()) BETWEEN 1 AND 6 THEN ?
-				WHEN TIMESTAMPDIFF(YEAR, tgl_lahir, CURDATE()) BETWEEN 7 AND 15 THEN ?
-				WHEN TIMESTAMPDIFF(YEAR, tgl_lahir, CURDATE()) BETWEEN 16 AND 64 THEN ?
-				WHEN TIMESTAMPDIFF(YEAR, tgl_lahir, CURDATE()) >= 65 THEN ?
-			END AS kategori,
-			COUNT(*) AS jumlah
-		FROM pasien
-		WHERE tgl_lahir IS NOT NULL AND tgl_lahir <> '0000-00-00'
-		GROUP BY kategori
-	`,
-		Models.KategoriUmurBayiBaruLahir,
-		Models.KategoriUmurBalita,
-		Models.KategoriUmurPendidikan,
-		Models.KategoriUmurProduktif,
-		Models.KategoriUmurLanjut,
-	)
+func (r *dashboardRepository) GetKategoriUmur(periode string) ([]ModelsPasien.KategoriUmurItem, error) {
+	resolved, err := ResolvePeriode(periode)
+	if err != nil {
+		return nil, err
+	}
+
+	andClause, err := periodeRegistrasiAndClause(resolved)
+	if err != nil {
+		return nil, err
+	}
+
+	caseSQL := `
+		CASE
+			WHEN TIMESTAMPDIFF(MONTH, p.tgl_lahir, CURDATE()) <= 12 THEN ?
+			WHEN TIMESTAMPDIFF(MONTH, p.tgl_lahir, CURDATE()) > 12
+				AND TIMESTAMPDIFF(YEAR, p.tgl_lahir, CURDATE()) BETWEEN 1 AND 6 THEN ?
+			WHEN TIMESTAMPDIFF(YEAR, p.tgl_lahir, CURDATE()) BETWEEN 7 AND 15 THEN ?
+			WHEN TIMESTAMPDIFF(YEAR, p.tgl_lahir, CURDATE()) BETWEEN 16 AND 64 THEN ?
+			WHEN TIMESTAMPDIFF(YEAR, p.tgl_lahir, CURDATE()) >= 65 THEN ?
+		END AS kategori`
+
+	args := []any{
+		ModelsPasien.KategoriUmurBayiBaruLahir,
+		ModelsPasien.KategoriUmurBalita,
+		ModelsPasien.KategoriUmurPendidikan,
+		ModelsPasien.KategoriUmurProduktif,
+		ModelsPasien.KategoriUmurLanjut,
+	}
+
+	var query string
+	if andClause == "" {
+		query = `
+			SELECT` + caseSQL + `, COUNT(*) AS jumlah
+			FROM pasien p
+			WHERE p.tgl_lahir IS NOT NULL AND p.tgl_lahir <> '0000-00-00'
+			GROUP BY 1`
+	} else {
+		query = `
+			SELECT` + caseSQL + `, COUNT(DISTINCT p.no_rkm_medis) AS jumlah
+			FROM reg_periksa rp
+			INNER JOIN pasien p ON rp.no_rkm_medis = p.no_rkm_medis
+			WHERE p.tgl_lahir IS NOT NULL AND p.tgl_lahir <> '0000-00-00'` + andClause + `
+			GROUP BY 1`
+	}
+
+	rows, err := r.db.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("kategori umur: %w", err)
 	}
 	defer rows.Close()
 
+	return scanKategoriUmurRows(rows)
+}
+
+func scanKategoriUmurRows(rows *sql.Rows) ([]ModelsPasien.KategoriUmurItem, error) {
 	counts := map[string]int{}
 	for rows.Next() {
-		var item Models.KategoriUmurItem
+		var item ModelsPasien.KategoriUmurItem
 		if err := rows.Scan(&item.Kategori, &item.Jumlah); err != nil {
 			return nil, err
 		}
-		counts[item.Kategori] = item.Jumlah
+		if item.Kategori != "" {
+			counts[item.Kategori] = item.Jumlah
+		}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
 	order := []string{
-		Models.KategoriUmurBayiBaruLahir,
-		Models.KategoriUmurBalita,
-		Models.KategoriUmurPendidikan,
-		Models.KategoriUmurProduktif,
-		Models.KategoriUmurLanjut,
+		ModelsPasien.KategoriUmurBayiBaruLahir,
+		ModelsPasien.KategoriUmurBalita,
+		ModelsPasien.KategoriUmurPendidikan,
+		ModelsPasien.KategoriUmurProduktif,
+		ModelsPasien.KategoriUmurLanjut,
 	}
-	result := make([]Models.KategoriUmurItem, 0, len(order))
+	result := make([]ModelsPasien.KategoriUmurItem, 0, len(order))
 	for _, k := range order {
-		result = append(result, Models.KategoriUmurItem{Kategori: k, Jumlah: counts[k]})
+		result = append(result, ModelsPasien.KategoriUmurItem{Kategori: k, Jumlah: counts[k]})
 	}
 	return result, nil
 }
 
-func (r *dashboardRepository) GetStatusPerawatan() (Models.StatusPerawatan, error) {
-	var out Models.StatusPerawatan
+func (r *dashboardRepository) GetStatusPerawatan() (ModelsPasien.StatusPerawatan, error) {
+	var out ModelsPasien.StatusPerawatan
 
 	if err := r.db.QueryRow(`
 		SELECT COUNT(*) FROM reg_periksa
 		WHERE status_lanjut = ? AND stts = 'Belum' AND tgl_registrasi = CURDATE()
-	`, Models.StatusLanjutRalan).Scan(&out.RawatJalanAktif); err != nil {
+	`, ModelsPasien.StatusLanjutRalan).Scan(&out.RawatJalanAktif); err != nil {
 		return out, fmt.Errorf("rawat jalan aktif: %w", err)
 	}
 
@@ -117,7 +147,7 @@ func (r *dashboardRepository) GetStatusPerawatan() (Models.StatusPerawatan, erro
 		if err := r.db.QueryRow(`
 			SELECT COUNT(*) FROM reg_periksa
 			WHERE status_lanjut = ? AND stts = 'Belum'
-		`, Models.StatusLanjutRanap).Scan(&out.RawatInapAktif); err != nil {
+		`, ModelsPasien.StatusLanjutRanap).Scan(&out.RawatInapAktif); err != nil {
 			return out, fmt.Errorf("rawat inap aktif: %w", err)
 		}
 	}
@@ -126,7 +156,7 @@ func (r *dashboardRepository) GetStatusPerawatan() (Models.StatusPerawatan, erro
 	return out, nil
 }
 
-func (r *dashboardRepository) GetDaftarPasien(filter Models.PasienFilter) ([]Models.PasienBaris, int, error) {
+func (r *dashboardRepository) GetDaftarPasien(filter ModelsPasien.PasienFilter) ([]ModelsPasien.PasienBaris, int, error) {
 	if filter.Limit <= 0 {
 		filter.Limit = 20
 	}
@@ -179,9 +209,9 @@ func (r *dashboardRepository) GetDaftarPasien(filter Models.PasienFilter) ([]Mod
 	}
 	defer rows.Close()
 
-	var list []Models.PasienBaris
+	var list []ModelsPasien.PasienBaris
 	for rows.Next() {
-		var row Models.PasienBaris
+		var row ModelsPasien.PasienBaris
 		var jk, statusLanjut string
 		if err := rows.Scan(
 			&row.ID, &row.Nama, &row.NoTelepon, &row.Diagnosa,
@@ -195,12 +225,12 @@ func (r *dashboardRepository) GetDaftarPasien(filter Models.PasienFilter) ([]Mod
 		list = append(list, row)
 	}
 	if list == nil {
-		list = []Models.PasienBaris{}
+		list = []ModelsPasien.PasienBaris{}
 	}
 	return list, total, rows.Err()
 }
 
-func buildPasienFilter(f Models.PasienFilter) (string, []any) {
+func buildPasienFilter(f ModelsPasien.PasienFilter) (string, []any) {
 	var conds []string
 	var args []any
 
@@ -234,9 +264,9 @@ func buildPasienFilter(f Models.PasienFilter) (string, []any) {
 
 func labelJenisKelamin(jk string) string {
 	switch jk {
-	case Models.JenisKelaminLaki:
+	case ModelsPasien.JenisKelaminLaki:
 		return "Laki-laki"
-	case Models.JenisKelaminPerempuan:
+	case ModelsPasien.JenisKelaminPerempuan:
 		return "Perempuan"
 	default:
 		return jk
@@ -244,7 +274,7 @@ func labelJenisKelamin(jk string) string {
 }
 
 func labelStatusLanjut(status string) string {
-	if status == Models.StatusLanjutRanap {
+	if status == ModelsPasien.StatusLanjutRanap {
 		return "Rawat Inap"
 	}
 	return "Rawat Jalan"

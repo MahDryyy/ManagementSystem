@@ -25,8 +25,12 @@ func main() {
 	dashboardSvc := services.NewDashboardService(dashboardRepo)
 	dashboardCtrl := controllers.NewDashboardController(dashboardSvc)
 
+	diagnosaRepo := repositories.NewDiagnosaRepository(database)
+	diagnosaSvc := services.NewDiagnosaService(diagnosaRepo)
+	diagnosaCtrl := controllers.NewDiagnosaController(diagnosaSvc)
+
 	router := gin.Default()
-	routes.Setup(router, dashboardCtrl)
+	routes.Setup(router, dashboardCtrl, diagnosaCtrl)
 
 	port := os.Getenv("PORT")
 	if port == "" {
