@@ -21,6 +21,7 @@ type AgePieChartProps = {
   data: KategoriUmurItem[];
   periode: KategoriUmurPeriode;
   onPeriodeChange: (p: KategoriUmurPeriode) => void;
+  onKategoriClick?: (kategori: string, jumlah: number) => void;
   loading?: boolean;
 };
 
@@ -75,6 +76,7 @@ export default function AgePieChart({
   data,
   periode,
   onPeriodeChange,
+  onKategoriClick,
   loading,
 }: AgePieChartProps) {
   const chartKey = `${periode}-${data.map((d) => d.jumlah).join(",")}`;
@@ -142,9 +144,16 @@ export default function AgePieChart({
                         fill={s.color}
                         stroke="#fff"
                         strokeWidth="2"
-                        style={{
-                          opacity: 0.85 + progress * 0.15,
-                        }}
+                        className={
+                          s.item.jumlah > 0 && onKategoriClick
+                            ? "cursor-pointer hover:opacity-80"
+                            : ""
+                        }
+                        style={{ opacity: 0.85 + progress * 0.15 }}
+                        onClick={() =>
+                          s.item.jumlah > 0 &&
+                          onKategoriClick?.(s.item.kategori, s.item.jumlah)
+                        }
                       />
                     ),
                 )}
@@ -160,7 +169,26 @@ export default function AgePieChart({
               return (
                 <li
                   key={item.kategori}
-                  className="flex items-center gap-2 transition-all duration-300"
+                  role={item.jumlah > 0 && onKategoriClick ? "button" : undefined}
+                  tabIndex={item.jumlah > 0 && onKategoriClick ? 0 : undefined}
+                  onClick={() =>
+                    item.jumlah > 0 &&
+                    onKategoriClick?.(item.kategori, item.jumlah)
+                  }
+                  onKeyDown={(e) => {
+                    if (
+                      (e.key === "Enter" || e.key === " ") &&
+                      item.jumlah > 0
+                    ) {
+                      e.preventDefault();
+                      onKategoriClick?.(item.kategori, item.jumlah);
+                    }
+                  }}
+                  className={`flex items-center gap-2 rounded-lg transition-all duration-300 ${
+                    item.jumlah > 0 && onKategoriClick
+                      ? "cursor-pointer hover:bg-zinc-50 px-1 py-0.5 -mx-1"
+                      : ""
+                  }`}
                   style={{
                     opacity: sliceProgress,
                     transform: `translateX(${(1 - sliceProgress) * 8}px)`,

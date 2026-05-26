@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "@/lib/config";
+import type { DrilldownTipe } from "@/lib/drilldown";
 import type {
   DaftarPasienResponse,
   DashboardPasienResponse,
@@ -69,5 +70,27 @@ export function fetchDiagnosaTerbanyak(
 export function fetchKategoriUmur(periode: KategoriUmurPeriode) {
   return apiGet<KategoriUmurItem[]>(
     `/api/dashboard/pasien/kategori-umur${buildQuery({ periode })}`,
+  );
+}
+
+export type DrilldownParams = {
+  tipe: DrilldownTipe;
+  periode?: string;
+  kategori?: string;
+  kd_penyakit?: string;
+  limit?: number;
+  offset?: number;
+};
+
+export function fetchDrilldownPasien(params: DrilldownParams) {
+  return apiGet<DaftarPasienResponse>(
+    `/api/dashboard/pasien/drilldown${buildQuery({
+      tipe: params.tipe,
+      periode: params.periode,
+      kategori: params.kategori,
+      kd_penyakit: params.kd_penyakit,
+      limit: params.limit ?? 50,
+      offset: params.offset ?? 0,
+    })}`,
   );
 }

@@ -22,7 +22,10 @@ import PatientsTable from "@/components/dashboard-pasien/PatientsTable";
 import StatCard from "@/components/dashboard-pasien/StatCard";
 import DashboardPasienSkeleton from "@/components/dashboard-pasien/DashboardPasienSkeleton";
 import StatusPerawatanCard from "@/components/dashboard-pasien/StatusPerawatanCard";
+import PasienDrilldownModal from "@/components/dashboard-pasien/PasienDrilldownModal";
 import FadeIn from "@/components/ui/FadeIn";
+import type { DrilldownModalConfig } from "@/lib/drilldown";
+import { periodeLabel } from "@/lib/drilldown";
 
 export default function DashboardPasien() {
   const [dashboard, setDashboard] = useState<DashboardPasienResponse | null>(
@@ -47,6 +50,7 @@ export default function DashboardPasien() {
   const [search, setSearch] = useState("");
   const [filterId, setFilterId] = useState("");
   const [filterGender, setFilterGender] = useState("");
+  const [drilldown, setDrilldown] = useState<DrilldownModalConfig | null>(null);
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
@@ -159,7 +163,22 @@ export default function DashboardPasien() {
 
   const { ringkasan, status_perawatan } = dashboard;
 
+  const openKategoriDrilldown = (kategori: string, jumlah: number) => {
+    setDrilldown({
+      title: kategori,
+      subtitle: `Periode: ${periodeLabel(kategoriUmurPeriode)} · ${jumlah} pasien`,
+      tipe: "kategori_umur",
+      periode: kategoriUmurPeriode,
+      kategori,
+    });
+  };
+
   return (
+    <>
+    <PasienDrilldownModal
+      config={drilldown}
+      onClose={() => setDrilldown(null)}
+    />
     <div className="min-h-0 flex-1 overflow-y-auto bg-zinc-50 p-8">
       <FadeIn className="mb-8">
         <h1 className="text-2xl font-bold text-zinc-900">Dashboard Pasien</h1>
@@ -176,6 +195,13 @@ export default function DashboardPasien() {
             icon={Home}
             iconBg="bg-rose-50"
             iconColor="text-rose-500"
+            onDetailClick={() =>
+              setDrilldown({
+                title: "Pasien Rawat Inap",
+                subtitle: "Semua registrasi rawat inap (semua waktu)",
+                tipe: "ringkasan_ranap",
+              })
+            }
           />
         </FadeIn>
         <FadeIn delayMs={160}>
@@ -185,6 +211,13 @@ export default function DashboardPasien() {
             icon={Activity}
             iconBg="bg-emerald-50"
             iconColor="text-emerald-500"
+            onDetailClick={() =>
+              setDrilldown({
+                title: "Pasien Rawat Jalan",
+                subtitle: "Semua registrasi rawat jalan (semua waktu)",
+                tipe: "ringkasan_ralan",
+              })
+            }
           />
         </FadeIn>
         <FadeIn delayMs={240}>
@@ -194,6 +227,13 @@ export default function DashboardPasien() {
             icon={Users}
             iconBg="bg-violet-50"
             iconColor="text-violet-500"
+            onDetailClick={() =>
+              setDrilldown({
+                title: "Total Pasien Terdaftar",
+                subtitle: "Semua pasien terdaftar di klinik",
+                tipe: "ringkasan_total",
+              })
+            }
           />
         </FadeIn>
       </div>
@@ -204,12 +244,29 @@ export default function DashboardPasien() {
             data={kategoriUmur}
             periode={kategoriUmurPeriode}
             onPeriodeChange={setKategoriUmurPeriode}
+            onKategoriClick={openKategoriDrilldown}
             loading={kategoriUmurLoading}
           />
         </FadeIn>
 
         <FadeIn delayMs={280}>
-          <StatusPerawatanCard data={status_perawatan} />
+          <StatusPerawatanCard
+            data={status_perawatan}
+            onInapClick={() =>
+              setDrilldown({
+                title: "Pasien Rawat Inap Aktif",
+                subtitle: "Pasien inap yang masih dirawat hari ini",
+                tipe: "status_inap_aktif",
+              })
+            }
+            onJalanClick={() =>
+              setDrilldown({
+                title: "Pasien Rawat Jalan Aktif",
+                subtitle: "Registrasi rawat jalan aktif hari ini",
+                tipe: "status_jalan_aktif",
+              })
+            }
+          />
         </FadeIn>
       </div>
 
@@ -218,6 +275,15 @@ export default function DashboardPasien() {
           data={diagnosa}
           periode={diagnosaPeriode}
           onPeriodeChange={setDiagnosaPeriode}
+          onDiagnosaClick={(item) =>
+            setDrilldown({
+              title: item.nama_penyakit,
+              subtitle: `Periode: ${periodeLabel(diagnosaPeriode)} · ${item.jumlah} kasus (${item.persentase.toFixed(2)}%)`,
+              tipe: "diagnosa",
+              periode: diagnosaPeriode,
+              kd_penyakit: item.kd_penyakit,
+            })
+          }
           loading={diagnosaLoading}
         />
       </FadeIn>
@@ -236,5 +302,6 @@ export default function DashboardPasien() {
         />
       </FadeIn>
     </div>
+    </>
   );
 }

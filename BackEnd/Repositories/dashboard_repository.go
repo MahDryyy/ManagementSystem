@@ -12,6 +12,7 @@ type DashboardRepository interface {
 	GetKategoriUmur(periode string) ([]ModelsPasien.KategoriUmurItem, error)
 	GetStatusPerawatan() (ModelsPasien.StatusPerawatan, error)
 	GetDaftarPasien(filter ModelsPasien.PasienFilter) ([]ModelsPasien.PasienBaris, int, error)
+	GetDrilldownPasien(filter ModelsPasien.PasienDrilldownFilter) ([]ModelsPasien.PasienBaris, int, error)
 }
 
 type dashboardRepository struct {
@@ -57,23 +58,8 @@ func (r *dashboardRepository) GetKategoriUmur(periode string) ([]ModelsPasien.Ka
 		return nil, err
 	}
 
-	caseSQL := `
-		CASE
-			WHEN TIMESTAMPDIFF(MONTH, p.tgl_lahir, CURDATE()) <= 12 THEN ?
-			WHEN TIMESTAMPDIFF(MONTH, p.tgl_lahir, CURDATE()) > 12
-				AND TIMESTAMPDIFF(YEAR, p.tgl_lahir, CURDATE()) BETWEEN 1 AND 6 THEN ?
-			WHEN TIMESTAMPDIFF(YEAR, p.tgl_lahir, CURDATE()) BETWEEN 7 AND 15 THEN ?
-			WHEN TIMESTAMPDIFF(YEAR, p.tgl_lahir, CURDATE()) BETWEEN 16 AND 64 THEN ?
-			WHEN TIMESTAMPDIFF(YEAR, p.tgl_lahir, CURDATE()) >= 65 THEN ?
-		END AS kategori`
-
-	args := []any{
-		ModelsPasien.KategoriUmurBayiBaruLahir,
-		ModelsPasien.KategoriUmurBalita,
-		ModelsPasien.KategoriUmurPendidikan,
-		ModelsPasien.KategoriUmurProduktif,
-		ModelsPasien.KategoriUmurLanjut,
-	}
+	caseSQL, args := kategoriUmurCaseSQL()
+	caseSQL += ` AS kategori`
 
 	var query string
 	if andClause == "" {

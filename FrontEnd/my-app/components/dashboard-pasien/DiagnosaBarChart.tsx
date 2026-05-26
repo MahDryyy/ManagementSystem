@@ -15,6 +15,7 @@ type DiagnosaBarChartProps = {
   data: DiagnosaTerbanyakItem[];
   periode: DiagnosaPeriode;
   onPeriodeChange: (p: DiagnosaPeriode) => void;
+  onDiagnosaClick?: (item: DiagnosaTerbanyakItem) => void;
   loading?: boolean;
 };
 
@@ -38,6 +39,7 @@ export default function DiagnosaBarChart({
   data,
   periode,
   onPeriodeChange,
+  onDiagnosaClick,
   loading,
 }: DiagnosaBarChartProps) {
   const chartKey = `${periode}-${data.map((d) => d.kd_penyakit).join(",")}`;
@@ -88,13 +90,31 @@ export default function DiagnosaBarChart({
             );
             const barWidth = (item.persentase / maxPct) * 100 * rowProgress;
 
+            const clickable = item.jumlah > 0 && !!onDiagnosaClick;
+
             return (
               <li
                 key={item.kd_penyakit}
+                role={clickable ? "button" : undefined}
+                tabIndex={clickable ? 0 : undefined}
+                onClick={() => clickable && onDiagnosaClick(item)}
+                onKeyDown={(e) => {
+                  if (
+                    clickable &&
+                    (e.key === "Enter" || e.key === " ")
+                  ) {
+                    e.preventDefault();
+                    onDiagnosaClick(item);
+                  }
+                }}
+                className={`rounded-lg transition-all ${
+                  clickable
+                    ? "cursor-pointer hover:bg-zinc-50 px-2 py-1 -mx-2"
+                    : ""
+                }`}
                 style={{
                   opacity: rowProgress,
                   transform: `translateX(${(1 - rowProgress) * 12}px)`,
-                  transition: "opacity 0.25s ease-out, transform 0.25s ease-out",
                 }}
               >
                 <div className="mb-1.5 flex items-baseline justify-between gap-2 text-sm">
@@ -103,19 +123,29 @@ export default function DiagnosaBarChart({
                   </span>
                   <span className="shrink-0 tabular-nums text-zinc-500">
                     {(item.persentase * rowProgress).toFixed(2)}%
+                    {clickable && (
+                      <span className="ml-2 text-xs text-cyan-600">
+                        · {item.jumlah} kasus
+                      </span>
+                    )}
                   </span>
                 </div>
                 <div className="h-3 overflow-hidden rounded-full bg-zinc-100">
                   <div
-                    className={`h-full rounded-full ease-out ${
+                    className={`h-full rounded-full ease-out transition-colors ${
                       idx === 0 ? "bg-cyan-500" : "bg-violet-300"
-                    }`}
+                    } ${clickable ? "group-hover:opacity-90" : ""}`}
                     style={{
                       width: `${barWidth}%`,
                       transition: "width 0.05s linear",
                     }}
                   />
                 </div>
+                {clickable && rowProgress > 0.8 && (
+                  <p className="mt-1 text-xs text-cyan-600">
+                    Klik untuk lihat daftar pasien
+                  </p>
+                )}
               </li>
             );
           })}

@@ -26,6 +26,7 @@ func Setup(
 		pasien.GET("/kategori-umur", dashboardCtrl.GetKategoriUmur)
 		pasien.GET("/status-perawatan", dashboardCtrl.GetStatusPerawatan)
 		pasien.GET("/daftar", dashboardCtrl.GetDaftarPasien)
+		pasien.GET("/drilldown", dashboardCtrl.GetDrilldownPasien)
 	}
 
 	diagnosa := router.Group("/api/dashboard/diagnosa")

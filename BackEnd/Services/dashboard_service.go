@@ -11,6 +11,7 @@ type DashboardService interface {
 	GetKategoriUmur(periode string) ([]ModelsPasien.KategoriUmurItem, error)
 	GetStatusPerawatan() (ModelsPasien.StatusPerawatan, error)
 	GetDaftarPasien(filter ModelsPasien.PasienFilter) (ModelsPasien.DaftarPasienResponse, error)
+	GetDrilldownPasien(filter ModelsPasien.PasienDrilldownFilter) (ModelsPasien.DaftarPasienResponse, error)
 }
 
 type dashboardService struct {
@@ -71,6 +72,17 @@ func (s *dashboardService) GetDaftarPasien(filter ModelsPasien.PasienFilter) (Mo
 		filter.Limit = 20
 	}
 	data, total, err := s.repo.GetDaftarPasien(filter)
+	if err != nil {
+		return ModelsPasien.DaftarPasienResponse{}, err
+	}
+	return ModelsPasien.DaftarPasienResponse{Data: data, Total: total}, nil
+}
+
+func (s *dashboardService) GetDrilldownPasien(filter ModelsPasien.PasienDrilldownFilter) (ModelsPasien.DaftarPasienResponse, error) {
+	if filter.Limit <= 0 {
+		filter.Limit = 50
+	}
+	data, total, err := s.repo.GetDrilldownPasien(filter)
 	if err != nil {
 		return ModelsPasien.DaftarPasienResponse{}, err
 	}

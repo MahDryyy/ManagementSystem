@@ -120,3 +120,24 @@ type DaftarPasienResponse struct {
 	Data  []PasienBaris `json:"data"`
 	Total int           `json:"total"`
 }
+
+// Tipe drill-down (klik ringkasan / kategori umur / status perawatan).
+const (
+	DrilldownRingkasanTotal       = "ringkasan_total"
+	DrilldownRingkasanRalan       = "ringkasan_ralan"
+	DrilldownRingkasanRanap       = "ringkasan_ranap"
+	DrilldownKategoriUmur         = "kategori_umur"
+	DrilldownStatusJalanAktif     = "status_jalan_aktif"
+	DrilldownStatusInapAktif      = "status_inap_aktif"
+	DrilldownDiagnosa             = "diagnosa"
+)
+
+// PasienDrilldownFilter parameter daftar pasien saat kartu/chart diklik.
+type PasienDrilldownFilter struct {
+	Tipe       string `json:"tipe"`
+	Periode    string `json:"periode"`     // hari_ini | minggu_ini | bulan_ini | semua
+	Kategori   string `json:"kategori"`   // label kategori umur (untuk tipe kategori_umur)
+	KdPenyakit string `json:"kd_penyakit"` // kode penyakit (untuk tipe diagnosa)
+	Limit      int    `json:"limit"`
+	Offset     int    `json:"offset"`
+}

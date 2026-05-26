@@ -13,6 +13,7 @@ type StatCardProps = {
   icon: LucideIcon;
   iconBg: string;
   iconColor: string;
+  onDetailClick?: () => void;
 };
 
 export default function StatCard({
@@ -21,6 +22,7 @@ export default function StatCard({
   icon: Icon,
   iconBg,
   iconColor,
+  onDetailClick,
 }: StatCardProps) {
   const progress = useAnimateProgress(value, true, 800);
 
@@ -33,6 +35,7 @@ export default function StatCard({
         </p>
         <button
           type="button"
+          onClick={onDetailClick}
           className="mt-3 flex items-center gap-1 text-sm font-medium text-cyan-600 hover:text-cyan-700"
         >
           Detail
@@ -40,12 +43,15 @@ export default function StatCard({
           <ChevronRight className="-ml-2 h-4 w-4" />
         </button>
       </div>
-      <div
+      <button
+        type="button"
+        onClick={onDetailClick}
         className={`flex h-14 w-14 items-center justify-center rounded-2xl transition-transform duration-700 ${iconBg}`}
         style={{ transform: `scale(${0.7 + progress * 0.3})` }}
+        aria-label={`Lihat detail ${label}`}
       >
         <Icon className={`h-7 w-7 ${iconColor}`} />
-      </div>
+      </button>
     </div>
   );
 }

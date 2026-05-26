@@ -72,6 +72,31 @@ func (ctrl *DashboardController) GetDaftarPasien(c *gin.Context) {
 	c.JSON(http.StatusOK, data)
 }
 
+func (ctrl *DashboardController) GetDrilldownPasien(c *gin.Context) {
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+
+	filter := ModelsPasien.PasienDrilldownFilter{
+		Tipe:       c.Query("tipe"),
+		Periode:    c.DefaultQuery("periode", ModelsPasien.PeriodeSemuaWaktu),
+		Kategori:   c.Query("kategori"),
+		KdPenyakit: c.Query("kd_penyakit"),
+		Limit:      limit,
+		Offset:     offset,
+	}
+
+	data, err := ctrl.svc.GetDrilldownPasien(filter)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if strings.Contains(err.Error(), "tidak valid") || strings.Contains(err.Error(), "wajib") {
+			status = http.StatusBadRequest
+		}
+		c.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}
+
 func parsePasienFilter(c *gin.Context) ModelsPasien.PasienFilter {
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
