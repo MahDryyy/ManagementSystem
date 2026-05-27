@@ -25,7 +25,56 @@ export type PasienBaris = {
   jenis_kelamin: string;
   rawat: string;
   penjamin: string;
+  ruangan?: string;
   no_rawat?: string;
+};
+
+export type PasienDetail = {
+  identitas: {
+    no_rkm_medis: string;
+    nama: string;
+    no_ktp: string;
+    jenis_kelamin: string;
+    tmp_lahir: string;
+    tgl_lahir: string;
+    umur_tahun: number;
+    gol_darah: string;
+    agama: string;
+    stts_nikah: string;
+    pekerjaan: string;
+    umur_label: string;
+  };
+  kontak: {
+    alamat: string;
+    no_telepon: string;
+    email: string;
+  };
+  penjamin: {
+    kd_pj: string;
+    penjamin: string;
+    no_peserta: string;
+    perusahaan: string;
+  };
+  keluarga: {
+    hubungan: string;
+    nama: string;
+    pekerjaan: string;
+    alamat: string;
+    kelurahan: string;
+    kecamatan: string;
+    kabupaten: string;
+    propinsi: string;
+  };
+  lainnya: {
+    pendidikan: string;
+    nm_ibu: string;
+    tgl_daftar: string;
+  };
+  perawatan: {
+    ruangan_aktif: string;
+    no_rawat_aktif: string;
+    status_rawat: string;
+  };
 };
 
 export type DashboardPasienResponse = {
@@ -53,14 +102,27 @@ export type DiagnosaTerbanyakResponse = {
   data: DiagnosaTerbanyakItem[];
 };
 
+/** Filter penjamin daftar pasien — sama dengan query `penjamin` di backend. */
+export type PenjaminFilter = "" | "bpjs" | "umum";
+
 export type PasienFilterParams = {
   cari?: string;
   no_rkm_medis?: string;
   jenis_kelamin?: string;
   status_lanjut?: string;
+  penjamin?: PenjaminFilter;
   limit?: number;
   offset?: number;
 };
+
+export const PENJAMIN_FILTER_OPTIONS: {
+  value: PenjaminFilter;
+  label: string;
+}[] = [
+  { value: "", label: "Semua penjamin" },
+  { value: "bpjs", label: "BPJS" },
+  { value: "umum", label: "Umum" },
+];
 
 /** Nilai `periode` query — sama dengan konstanta di BackEnd/Models/ModelsDiagnosa.go */
 export type DiagnosaPeriode =

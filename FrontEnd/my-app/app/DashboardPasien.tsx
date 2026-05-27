@@ -15,6 +15,7 @@ import type {
   KategoriUmurItem,
   KategoriUmurPeriode,
   PasienBaris,
+  PenjaminFilter,
 } from "@/lib/types/dashboard-pasien";
 import AgePieChart from "@/components/dashboard-pasien/AgePieChart";
 import DiagnosaBarChart from "@/components/dashboard-pasien/DiagnosaBarChart";
@@ -23,6 +24,7 @@ import StatCard from "@/components/dashboard-pasien/StatCard";
 import DashboardPasienSkeleton from "@/components/dashboard-pasien/DashboardPasienSkeleton";
 import StatusPerawatanCard from "@/components/dashboard-pasien/StatusPerawatanCard";
 import PasienDrilldownModal from "@/components/dashboard-pasien/PasienDrilldownModal";
+import PasienDetailDrawer from "@/components/dashboard-pasien/PasienDetailDrawer";
 import FadeIn from "@/components/ui/FadeIn";
 import type { DrilldownModalConfig } from "@/lib/drilldown";
 import { periodeLabel } from "@/lib/drilldown";
@@ -48,9 +50,10 @@ export default function DashboardPasien() {
   const [kategoriUmurLoading, setKategoriUmurLoading] = useState(false);
 
   const [search, setSearch] = useState("");
-  const [filterId, setFilterId] = useState("");
   const [filterGender, setFilterGender] = useState("");
+  const [filterPenjamin, setFilterPenjamin] = useState<PenjaminFilter>("");
   const [drilldown, setDrilldown] = useState<DrilldownModalConfig | null>(null);
+  const [detailPasienId, setDetailPasienId] = useState<string | null>(null);
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
@@ -95,13 +98,13 @@ export default function DashboardPasien() {
   }, []);
 
   const loadPatients = useCallback(
-    async (cari: string, noRkm: string, jk: string) => {
+    async (cari: string, jk: string, penjamin: PenjaminFilter) => {
       setTableLoading(true);
       try {
         const res = await fetchDaftarPasien({
-          cari: cari || undefined,
-          no_rkm_medis: noRkm || undefined,
+          cari: cari.trim() || undefined,
           jenis_kelamin: jk || undefined,
+          penjamin: penjamin || undefined,
           limit: 20,
           offset: 0,
         });
@@ -132,10 +135,10 @@ export default function DashboardPasien() {
   useEffect(() => {
     if (loading) return;
     const t = setTimeout(() => {
-      loadPatients(search, filterId, filterGender);
+      loadPatients(search, filterGender, filterPenjamin);
     }, 400);
     return () => clearTimeout(t);
-  }, [search, filterId, filterGender, loadPatients, loading]);
+  }, [search, filterGender, filterPenjamin, loadPatients, loading]);
 
   if (loading) {
     return <DashboardPasienSkeleton />;
@@ -178,6 +181,10 @@ export default function DashboardPasien() {
     <PasienDrilldownModal
       config={drilldown}
       onClose={() => setDrilldown(null)}
+    />
+    <PasienDetailDrawer
+      noRkmMedis={detailPasienId}
+      onClose={() => setDetailPasienId(null)}
     />
     <div className="min-h-0 flex-1 overflow-y-auto bg-zinc-50 p-8">
       <FadeIn className="mb-8">
@@ -295,10 +302,11 @@ export default function DashboardPasien() {
           loading={tableLoading}
           search={search}
           onSearchChange={setSearch}
-          filterId={filterId}
-          onFilterIdChange={setFilterId}
           filterGender={filterGender}
           onFilterGenderChange={setFilterGender}
+          filterPenjamin={filterPenjamin}
+          onFilterPenjaminChange={setFilterPenjamin}
+          onRowClick={(row) => setDetailPasienId(row.id)}
         />
       </FadeIn>
     </div>

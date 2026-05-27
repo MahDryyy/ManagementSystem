@@ -13,6 +13,7 @@ type DashboardRepository interface {
 	GetStatusPerawatan() (ModelsPasien.StatusPerawatan, error)
 	GetDaftarPasien(filter ModelsPasien.PasienFilter) ([]ModelsPasien.PasienBaris, int, error)
 	GetDrilldownPasien(filter ModelsPasien.PasienDrilldownFilter) ([]ModelsPasien.PasienBaris, int, error)
+	GetPasienDetail(noRkmMedis string) (ModelsPasien.PasienDetail, error)
 }
 
 type dashboardRepository struct {
@@ -157,6 +158,7 @@ func (r *dashboardRepository) GetDaftarPasien(filter ModelsPasien.PasienFilter) 
 		SELECT COUNT(DISTINCT rp.no_rawat)
 		FROM reg_periksa rp
 		INNER JOIN pasien p ON rp.no_rkm_medis = p.no_rkm_medis
+		LEFT JOIN penjab pj ON rp.kd_pj = pj.kd_pj
 	` + where
 	if err := r.db.QueryRow(countQuery, args...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("hitung daftar: %w", err)
@@ -180,6 +182,7 @@ func (r *dashboardRepository) GetDaftarPasien(filter ModelsPasien.PasienFilter) 
 			p.jk,
 			rp.status_lanjut,
 			IFNULL(pj.png_jawab, '-'),
+			` + sqlRuanganKosong + `,
 			rp.no_rawat
 		FROM reg_periksa rp
 		INNER JOIN pasien p ON rp.no_rkm_medis = p.no_rkm_medis
@@ -202,7 +205,7 @@ func (r *dashboardRepository) GetDaftarPasien(filter ModelsPasien.PasienFilter) 
 		if err := rows.Scan(
 			&row.ID, &row.Nama, &row.NoTelepon, &row.Diagnosa,
 			&row.TglLahir, &row.Umur, &jk, &statusLanjut,
-			&row.Penjamin, &row.NoRawat,
+			&row.Penjamin, &row.Ruangan, &row.NoRawat,
 		); err != nil {
 			return nil, 0, err
 		}
@@ -243,6 +246,21 @@ func buildPasienFilter(f ModelsPasien.PasienFilter) (string, []any) {
 	if f.StatusLanjut != "" {
 		conds = append(conds, "rp.status_lanjut = ?")
 		args = append(args, f.StatusLanjut)
+	}
+	switch strings.ToLower(f.Penjamin) {
+	case ModelsPasien.FilterPenjaminBPJS:
+		conds = append(conds, `(
+			pj.kd_pj = ?
+			OR LOWER(IFNULL(pj.png_jawab, '')) LIKE '%bpjs%'
+			OR LOWER(IFNULL(pj.png_jawab, '')) LIKE '%jkn%'
+		)`)
+		args = append(args, ModelsPasien.KdPjBPJS)
+	case ModelsPasien.FilterPenjaminUmum:
+		conds = append(conds, `(
+			pj.kd_pj = ?
+			OR LOWER(IFNULL(pj.png_jawab, '')) LIKE '%umum%'
+		)`)
+		args = append(args, ModelsPasien.KdPjUmum)
 	}
 
 	return " WHERE " + strings.Join(conds, " AND "), args

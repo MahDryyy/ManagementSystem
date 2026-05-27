@@ -12,6 +12,7 @@ type DashboardService interface {
 	GetStatusPerawatan() (ModelsPasien.StatusPerawatan, error)
 	GetDaftarPasien(filter ModelsPasien.PasienFilter) (ModelsPasien.DaftarPasienResponse, error)
 	GetDrilldownPasien(filter ModelsPasien.PasienDrilldownFilter) (ModelsPasien.DaftarPasienResponse, error)
+	GetPasienDetail(noRkmMedis string) (ModelsPasien.PasienDetail, error)
 }
 
 type dashboardService struct {
@@ -87,4 +88,8 @@ func (s *dashboardService) GetDrilldownPasien(filter ModelsPasien.PasienDrilldow
 		return ModelsPasien.DaftarPasienResponse{}, err
 	}
 	return ModelsPasien.DaftarPasienResponse{Data: data, Total: total}, nil
+}
+
+func (s *dashboardService) GetPasienDetail(noRkmMedis string) (ModelsPasien.PasienDetail, error) {
+	return s.repo.GetPasienDetail(noRkmMedis)
 }

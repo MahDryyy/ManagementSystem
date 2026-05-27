@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Banknote,
+  ChevronLeft,
   ClipboardList,
   FileText,
   HelpCircle,
@@ -9,6 +10,7 @@ import {
   MessageCircle,
   Settings,
   Users,
+  X,
 } from "lucide-react";
 import type { AppRoute } from "@/lib/routes";
 
@@ -46,6 +48,9 @@ export const footerNavItems: NavItem[] = [
 export type SidebarProps = {
   activeRoute: AppRoute;
   onNavigate: (route: AppRoute) => void;
+  mobileOpen: boolean;
+  desktopCollapsed: boolean;
+  onClose: () => void;
   dashboardBadge?: number;
   onLogout?: () => void;
 };
@@ -78,9 +83,9 @@ function NavButton({
           active ? "text-zinc-700" : "text-zinc-500"
         }`}
       />
-      <span className="flex-1">{item.label}</span>
+      <span className="flex-1 truncate">{item.label}</span>
       {badge != null && badge > 0 && (
-        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold text-white">
+        <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-semibold text-white">
           {badge}
         </span>
       )}
@@ -91,21 +96,51 @@ function NavButton({
 export default function Sidebar({
   activeRoute,
   onNavigate,
+  mobileOpen,
+  desktopCollapsed,
+  onClose,
   dashboardBadge = 12,
   onLogout,
 }: SidebarProps) {
   return (
-    <aside className="flex h-full w-[260px] shrink-0 flex-col overflow-hidden border-r border-zinc-100 bg-white px-5 py-6">
-      <div className="mb-8 px-1">
-        <h1 className="text-xl font-bold tracking-tight text-zinc-800">
-          AMPEL <span style={{ color: BRAND_CYAN }}>GADING</span>
-        </h1>
-        <p className="mt-0.5 text-[10px] font-medium tracking-[0.2em] text-zinc-400 uppercase">
-          Medical Centre
-        </p>
+    <aside
+      id="app-sidebar"
+      className={`fixed inset-y-0 left-0 z-40 flex h-full w-[min(280px,85vw)] max-w-[280px] shrink-0 -translate-x-full flex-col overflow-hidden border-r border-zinc-100 bg-white px-5 py-6 shadow-lg transition-[transform,width,padding,box-shadow] duration-300 ease-in-out lg:relative lg:z-auto lg:max-w-none lg:shadow-none ${
+        mobileOpen ? "translate-x-0" : ""
+      } ${
+        desktopCollapsed
+          ? "lg:w-0 lg:max-w-0 lg:-translate-x-full lg:border-r-0 lg:px-0"
+          : "lg:w-[260px] lg:translate-x-0"
+      }`}
+    >
+      <div className="mb-8 flex items-start justify-between gap-2 px-1">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold tracking-tight text-zinc-800">
+            AMPEL <span style={{ color: BRAND_CYAN }}>GADING</span>
+          </h1>
+          <p className="mt-0.5 text-[10px] font-medium tracking-[0.2em] text-zinc-400 uppercase">
+            Medical Centre
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800 lg:hidden"
+          aria-label="Tutup menu"
+        >
+          <X className="h-5 w-5" />
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800 lg:flex"
+          aria-label="Sembunyikan sidebar"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-0.5">
+      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto">
         {mainNavItems.map((item) => (
           <NavButton
             key={item.route}

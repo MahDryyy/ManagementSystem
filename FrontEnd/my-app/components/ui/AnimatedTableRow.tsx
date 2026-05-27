@@ -5,11 +5,15 @@ import { useEffect, useState, type ReactNode } from "react";
 type AnimatedTableRowProps = {
   children: ReactNode;
   delayMs?: number;
+  className?: string;
+  onClick?: () => void;
 };
 
 export function AnimatedTableRow({
   children,
   delayMs = 0,
+  className = "",
+  onClick,
 }: AnimatedTableRowProps) {
   const [visible, setVisible] = useState(false);
 
@@ -20,7 +24,8 @@ export function AnimatedTableRow({
 
   return (
     <tr
-      className="border-b border-zinc-50 text-zinc-700 last:border-0"
+      className={`border-b border-zinc-50 text-zinc-700 last:border-0 ${className}`}
+      onClick={onClick}
       style={{
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(8px)",

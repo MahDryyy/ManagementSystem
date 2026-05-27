@@ -10,6 +10,13 @@ const (
 
 	JenisKelaminLaki      = "L"
 	JenisKelaminPerempuan = "P"
+
+	FilterPenjaminBPJS = "bpjs"
+	FilterPenjaminUmum = "umum"
+
+	// Kode penjab Khanza (tabel penjab.kd_pj) — sesuaikan jika berbeda per RS.
+	KdPjBPJS = "BPJ"
+	KdPjUmum = "A09"
 )
 
 // Kategori umur untuk chart dashboard (dihitung dari tgl_lahir).
@@ -102,7 +109,69 @@ type PasienBaris struct {
 	JenisKelamin string    `json:"jenis_kelamin"` // Laki-laki | Perempuan (label UI)
 	Rawat        string    `json:"rawat"`         // Rawat Inap | Rawat Jalan
 	Penjamin     string    `json:"penjamin"`      // BPJS, Umum, dll. (png_jawab)
+	Ruangan      string    `json:"ruangan,omitempty"` // bangsal · kamar (rawat inap aktif)
 	NoRawat      string    `json:"no_rawat,omitempty"`
+}
+
+// PasienDetail profil lengkap pasien (drawer / halaman detail).
+type PasienDetail struct {
+	Identitas PasienDetailIdentitas `json:"identitas"`
+	Kontak    PasienDetailKontak    `json:"kontak"`
+	Penjamin  PasienDetailPenjamin  `json:"penjamin"`
+	Keluarga  PasienDetailKeluarga  `json:"keluarga"`
+	Lainnya   PasienDetailLainnya   `json:"lainnya"`
+	Perawatan PasienDetailPerawatan `json:"perawatan"`
+}
+
+type PasienDetailIdentitas struct {
+	NoRkmMedis string    `json:"no_rkm_medis"`
+	Nama       string    `json:"nama"`
+	NoKTP      string    `json:"no_ktp"`
+	JK         string    `json:"jenis_kelamin"`
+	TmpLahir   string    `json:"tmp_lahir"`
+	TglLahir   time.Time `json:"tgl_lahir"`
+	UmurTahun  int       `json:"umur_tahun"`
+	GolDarah   string    `json:"gol_darah"`
+	Agama      string    `json:"agama"`
+	SttsNikah  string    `json:"stts_nikah"`
+	Pekerjaan  string    `json:"pekerjaan"`
+	UmurLabel  string    `json:"umur_label"`
+}
+
+type PasienDetailKontak struct {
+	Alamat string `json:"alamat"`
+	NoTlp  string `json:"no_telepon"`
+	Email  string `json:"email"`
+}
+
+type PasienDetailPenjamin struct {
+	KdPj       string `json:"kd_pj"`
+	Penjamin   string `json:"penjamin"`
+	NoPeserta  string `json:"no_peserta"`
+	Perusahaan string `json:"perusahaan"`
+}
+
+type PasienDetailKeluarga struct {
+	Hubungan  string `json:"hubungan"`
+	Nama      string `json:"nama"`
+	Pekerjaan string `json:"pekerjaan"`
+	Alamat    string `json:"alamat"`
+	Kelurahan string `json:"kelurahan"`
+	Kecamatan string `json:"kecamatan"`
+	Kabupaten string `json:"kabupaten"`
+	Propinsi  string `json:"propinsi"`
+}
+
+type PasienDetailLainnya struct {
+	Pendidikan string `json:"pendidikan"`
+	NmIbu      string `json:"nm_ibu"`
+	TglDaftar  string `json:"tgl_daftar"`
+}
+
+type PasienDetailPerawatan struct {
+	RuanganAktif string `json:"ruangan_aktif"`
+	NoRawatAktif string `json:"no_rawat_aktif"`
+	StatusRawat  string `json:"status_rawat"`
 }
 
 // PasienFilter parameter pencarian & filter daftar pasien.
@@ -111,6 +180,7 @@ type PasienFilter struct {
 	NoRkmMedis   string `json:"no_rkm_medis"`
 	JenisKelamin string `json:"jenis_kelamin"` // L | P
 	StatusLanjut string `json:"status_lanjut"` // Ralan | Ranap | kosong = semua
+	Penjamin     string `json:"penjamin"`      // bpjs | umum | kosong = semua
 	Limit        int    `json:"limit"`
 	Offset       int    `json:"offset"`
 }

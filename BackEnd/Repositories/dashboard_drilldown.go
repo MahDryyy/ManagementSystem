@@ -68,6 +68,7 @@ func (r *dashboardRepository) drilldownTotalTerdaftar(limit, offset int) ([]Mode
 			p.jk,
 			IFNULL(rp.status_lanjut, '-'),
 			IFNULL(pj.png_jawab, '-'),
+			` + sqlRuanganKosong + `,
 			IFNULL(rp.no_rawat, '')
 		FROM pasien p
 		LEFT JOIN reg_periksa rp ON rp.no_rawat = (
@@ -151,6 +152,7 @@ func (r *dashboardRepository) drilldownKategoriUmur(
 			p.jk,
 			IFNULL(rp.status_lanjut, '-'),
 			IFNULL(pj.png_jawab, '-'),
+			` + sqlRuanganKosong + `,
 			IFNULL(rp.no_rawat, '')
 	` + fromSQL
 
@@ -177,6 +179,8 @@ func (r *dashboardRepository) drilldownStatusInapAktif(limit, offset int) ([]Mod
 		INNER JOIN reg_periksa rp ON ki.no_rawat = rp.no_rawat
 		INNER JOIN pasien p ON rp.no_rkm_medis = p.no_rkm_medis
 		LEFT JOIN penjab pj ON rp.kd_pj = pj.kd_pj
+		LEFT JOIN kamar k ON ki.kd_kamar = k.kd_kamar
+		LEFT JOIN bangsal b ON k.kd_bangsal = b.kd_bangsal
 		WHERE ki.tgl_keluar = '0000-00-00' OR ki.tgl_keluar IS NULL
 	`
 
@@ -202,10 +206,11 @@ func (r *dashboardRepository) drilldownStatusInapAktif(limit, offset int) ([]Mod
 			p.jk,
 			rp.status_lanjut,
 			IFNULL(pj.png_jawab, '-'),
+			` + sqlRuanganInap + `,
 			rp.no_rawat
 	` + fromSQL + `
-		GROUP BY p.no_rkm_medis, p.nm_pasien, p.no_tlp, p.tgl_lahir, p.jk, rp.status_lanjut, pj.png_jawab, rp.no_rawat
-		ORDER BY rp.tgl_registrasi DESC
+		GROUP BY p.no_rkm_medis, p.nm_pasien, p.no_tlp, p.tgl_lahir, p.jk, rp.status_lanjut, pj.png_jawab, b.nm_bangsal, ki.kd_kamar, k.kelas, rp.no_rawat
+		ORDER BY b.nm_bangsal ASC, ki.kd_kamar ASC
 		LIMIT ? OFFSET ?
 	`
 	return r.queryPasienBaris(query, []any{limit, offset}, total)
@@ -250,6 +255,7 @@ func (r *dashboardRepository) drilldownFromRegPeriksa(
 			p.jk,
 			rp.status_lanjut,
 			IFNULL(pj.png_jawab, '-'),
+			` + sqlRuanganKosong + `,
 			rp.no_rawat
 		FROM reg_periksa rp
 		INNER JOIN pasien p ON rp.no_rkm_medis = p.no_rkm_medis
@@ -305,6 +311,7 @@ func (r *dashboardRepository) drilldownDiagnosa(
 			p.jk,
 			rp.status_lanjut,
 			IFNULL(pj.png_jawab, '-'),
+			` + sqlRuanganKosong + `,
 			rp.no_rawat
 		FROM diagnosa_pasien dp
 		INNER JOIN penyakit peny ON dp.kd_penyakit = peny.kd_penyakit
@@ -338,7 +345,7 @@ func (r *dashboardRepository) queryPasienBaris(
 		if err := rows.Scan(
 			&row.ID, &row.Nama, &row.NoTelepon, &row.Diagnosa,
 			&row.TglLahir, &row.Umur, &jk, &statusLanjut,
-			&row.Penjamin, &row.NoRawat,
+			&row.Penjamin, &row.Ruangan, &row.NoRawat,
 		); err != nil {
 			return nil, 0, err
 		}

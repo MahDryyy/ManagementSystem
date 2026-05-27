@@ -1,7 +1,8 @@
 "use client";
 
 import { Search } from "lucide-react";
-import type { PasienBaris } from "@/lib/types/dashboard-pasien";
+import type { PasienBaris, PenjaminFilter } from "@/lib/types/dashboard-pasien";
+import { PENJAMIN_FILTER_OPTIONS } from "@/lib/types/dashboard-pasien";
 import { AnimatedTableRow } from "@/components/ui/AnimatedTableRow";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -11,10 +12,11 @@ type PatientsTableProps = {
   loading?: boolean;
   search: string;
   onSearchChange: (v: string) => void;
-  filterId: string;
-  onFilterIdChange: (v: string) => void;
   filterGender: string;
   onFilterGenderChange: (v: string) => void;
+  filterPenjamin: PenjaminFilter;
+  onFilterPenjaminChange: (v: PenjaminFilter) => void;
+  onRowClick?: (row: PasienBaris) => void;
 };
 
 function formatDate(iso: string) {
@@ -36,46 +38,55 @@ export default function PatientsTable({
   loading,
   search,
   onSearchChange,
-  filterId,
-  onFilterIdChange,
   filterGender,
   onFilterGenderChange,
+  filterPenjamin,
+  onFilterPenjaminChange,
+  onRowClick,
 }: PatientsTableProps) {
   return (
-    <div className="rounded-2xl border border-[#e8eaed] bg-white p-5 shadow-sm">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <div className="rounded-2xl border border-[#e8eaed] bg-white p-4 shadow-sm sm:p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h3 className="text-base font-semibold text-zinc-800">Patients</h3>
+          <h3 className="text-base font-semibold text-zinc-800">Daftar Pasien</h3>
           <p className="mt-0.5 text-sm text-zinc-500">
-            Showing {rows.length} of {total.toLocaleString("id-ID")}
+            Menampilkan {rows.length} dari {total.toLocaleString("id-ID")}
+            {onRowClick ? " · Klik baris untuk detail" : ""}
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="relative min-w-0 flex-1 sm:min-w-[200px] sm:max-w-xs">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
             <input
               type="search"
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Cari pasien…"
-              className="w-48 rounded-lg border border-zinc-200 py-2 pr-3 pl-9 text-sm outline-none focus:border-cyan-300 focus:ring-2 focus:ring-cyan-100"
+              placeholder="Cari nama, ID, alamat…"
+              className="w-full rounded-lg border border-zinc-200 bg-white py-2 pr-3 pl-9 text-sm text-black placeholder:text-zinc-400 outline-none focus:border-cyan-300 focus:ring-2 focus:ring-cyan-100"
             />
           </div>
-          <span className="text-sm text-zinc-500">Filter</span>
-          <input
-            type="text"
-            value={filterId}
-            onChange={(e) => onFilterIdChange(e.target.value)}
-            placeholder="ID"
-            className="w-28 rounded-lg border border-zinc-200 px-3 py-2 text-sm outline-none focus:border-cyan-300"
-          />
+          <select
+            value={filterPenjamin}
+            onChange={(e) =>
+              onFilterPenjaminChange(e.target.value as PenjaminFilter)
+            }
+            className="rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-700 outline-none focus:border-cyan-300"
+            aria-label="Filter penjamin"
+          >
+            {PENJAMIN_FILTER_OPTIONS.map((opt) => (
+              <option key={opt.value || "all"} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
           <select
             value={filterGender}
             onChange={(e) => onFilterGenderChange(e.target.value)}
             className="rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-700 outline-none focus:border-cyan-300"
+            aria-label="Filter jenis kelamin"
           >
-            <option value="">Gender</option>
+            <option value="">Semua gender</option>
             <option value="L">Laki-laki</option>
             <option value="P">Perempuan</option>
           </select>
@@ -116,6 +127,8 @@ export default function PatientsTable({
                 <AnimatedTableRow
                   key={`${row.id}-${row.no_rawat ?? ""}`}
                   delayMs={idx * 40}
+                  className={onRowClick ? "cursor-pointer hover:bg-cyan-50/40" : undefined}
+                  onClick={onRowClick ? () => onRowClick(row) : undefined}
                 >
                   <td className="py-3 pr-4 font-medium text-zinc-800">
                     {row.id}

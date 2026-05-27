@@ -7,6 +7,7 @@ import type {
   DiagnosaTerbanyakResponse,
   KategoriUmurItem,
   KategoriUmurPeriode,
+  PasienDetail,
   PasienFilterParams,
 } from "@/lib/types/dashboard-pasien";
 
@@ -39,6 +40,7 @@ export function fetchDashboardPasien(params?: PasienFilterParams) {
       no_rkm_medis: params?.no_rkm_medis,
       jenis_kelamin: params?.jenis_kelamin,
       status_lanjut: params?.status_lanjut,
+      penjamin: params?.penjamin,
       limit: params?.limit ?? 20,
       offset: params?.offset ?? 0,
     })}`,
@@ -52,6 +54,7 @@ export function fetchDaftarPasien(params?: PasienFilterParams) {
       no_rkm_medis: params?.no_rkm_medis,
       jenis_kelamin: params?.jenis_kelamin,
       status_lanjut: params?.status_lanjut,
+      penjamin: params?.penjamin,
       limit: params?.limit ?? 20,
       offset: params?.offset ?? 0,
     })}`,
@@ -81,6 +84,12 @@ export type DrilldownParams = {
   limit?: number;
   offset?: number;
 };
+
+export function fetchPasienDetail(noRkmMedis: string) {
+  return apiGet<PasienDetail>(
+    `/api/dashboard/pasien/${encodeURIComponent(noRkmMedis)}`,
+  );
+}
 
 export function fetchDrilldownPasien(params: DrilldownParams) {
   return apiGet<DaftarPasienResponse>(
