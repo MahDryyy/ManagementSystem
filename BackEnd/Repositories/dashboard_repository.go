@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"BackEnd/Models"
+	ModelsPasien "BackEnd/Models"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -183,6 +183,8 @@ func (r *dashboardRepository) GetDaftarPasien(filter ModelsPasien.PasienFilter) 
 			rp.status_lanjut,
 			IFNULL(pj.png_jawab, '-'),
 			` + sqlRuanganKosong + `,
+			` + sqlTglMasuk + `,
+			` + sqlTglKeluar + `,
 			rp.no_rawat
 		FROM reg_periksa rp
 		INNER JOIN pasien p ON rp.no_rkm_medis = p.no_rkm_medis
@@ -202,15 +204,17 @@ func (r *dashboardRepository) GetDaftarPasien(filter ModelsPasien.PasienFilter) 
 	for rows.Next() {
 		var row ModelsPasien.PasienBaris
 		var jk, statusLanjut string
+		var tglMasuk, tglKeluar sql.NullTime
 		if err := rows.Scan(
 			&row.ID, &row.Nama, &row.NoTelepon, &row.Diagnosa,
 			&row.TglLahir, &row.Umur, &jk, &statusLanjut,
-			&row.Penjamin, &row.Ruangan, &row.NoRawat,
+			&row.Penjamin, &row.Ruangan, &tglMasuk, &tglKeluar, &row.NoRawat,
 		); err != nil {
 			return nil, 0, err
 		}
-		row.JenisKelamin = labelJenisKelamin(jk)
-		row.Rawat = labelStatusLanjut(statusLanjut)
+		row.TglMasuk = nullTimeToPtr(tglMasuk)
+		row.TglKeluar = nullTimeToPtr(tglKeluar)
+		applyPasienBarisLabels(&row, jk, statusLanjut)
 		list = append(list, row)
 	}
 	if list == nil {

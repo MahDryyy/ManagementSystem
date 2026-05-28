@@ -27,6 +27,8 @@ export type PasienBaris = {
   penjamin: string;
   ruangan?: string;
   no_rawat?: string;
+  tgl_masuk?: string;
+  tgl_keluar?: string;
 };
 
 export type PasienDetail = {

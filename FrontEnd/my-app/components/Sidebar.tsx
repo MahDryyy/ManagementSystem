@@ -53,6 +53,7 @@ export type SidebarProps = {
   onClose: () => void;
   dashboardBadge?: number;
   onLogout?: () => void;
+  allowedRoutes?: AppRoute[];
 };
 
 function NavButton({
@@ -101,7 +102,12 @@ export default function Sidebar({
   onClose,
   dashboardBadge = 12,
   onLogout,
+  allowedRoutes,
 }: SidebarProps) {
+  const navItems = allowedRoutes
+    ? mainNavItems.filter((item) => allowedRoutes.includes(item.route))
+    : mainNavItems;
+
   return (
     <aside
       id="app-sidebar"
@@ -141,7 +147,7 @@ export default function Sidebar({
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto">
-        {mainNavItems.map((item) => (
+        {navItems.map((item) => (
           <NavButton
             key={item.route}
             item={item}

@@ -2,6 +2,7 @@ package repositories
 
 import (
 	ModelsPasien "BackEnd/Models"
+	"database/sql"
 	"fmt"
 )
 
@@ -69,6 +70,8 @@ func (r *dashboardRepository) drilldownTotalTerdaftar(limit, offset int) ([]Mode
 			IFNULL(rp.status_lanjut, '-'),
 			IFNULL(pj.png_jawab, '-'),
 			` + sqlRuanganKosong + `,
+			` + sqlTglMasuk + `,
+			` + sqlTglKeluar + `,
 			IFNULL(rp.no_rawat, '')
 		FROM pasien p
 		LEFT JOIN reg_periksa rp ON rp.no_rawat = (
@@ -153,6 +156,8 @@ func (r *dashboardRepository) drilldownKategoriUmur(
 			IFNULL(rp.status_lanjut, '-'),
 			IFNULL(pj.png_jawab, '-'),
 			` + sqlRuanganKosong + `,
+			` + sqlTglMasuk + `,
+			` + sqlTglKeluar + `,
 			IFNULL(rp.no_rawat, '')
 	` + fromSQL
 
@@ -207,6 +212,8 @@ func (r *dashboardRepository) drilldownStatusInapAktif(limit, offset int) ([]Mod
 			rp.status_lanjut,
 			IFNULL(pj.png_jawab, '-'),
 			` + sqlRuanganInap + `,
+			ki.tgl_masuk,
+			IF(ki.tgl_keluar = '0000-00-00' OR ki.tgl_keluar IS NULL, NULL, ki.tgl_keluar),
 			rp.no_rawat
 	` + fromSQL + `
 		GROUP BY p.no_rkm_medis, p.nm_pasien, p.no_tlp, p.tgl_lahir, p.jk, rp.status_lanjut, pj.png_jawab, b.nm_bangsal, ki.kd_kamar, k.kelas, rp.no_rawat
@@ -256,6 +263,8 @@ func (r *dashboardRepository) drilldownFromRegPeriksa(
 			rp.status_lanjut,
 			IFNULL(pj.png_jawab, '-'),
 			` + sqlRuanganKosong + `,
+			` + sqlTglMasuk + `,
+			` + sqlTglKeluar + `,
 			rp.no_rawat
 		FROM reg_periksa rp
 		INNER JOIN pasien p ON rp.no_rkm_medis = p.no_rkm_medis
@@ -312,6 +321,8 @@ func (r *dashboardRepository) drilldownDiagnosa(
 			rp.status_lanjut,
 			IFNULL(pj.png_jawab, '-'),
 			` + sqlRuanganKosong + `,
+			` + sqlTglMasuk + `,
+			` + sqlTglKeluar + `,
 			rp.no_rawat
 		FROM diagnosa_pasien dp
 		INNER JOIN penyakit peny ON dp.kd_penyakit = peny.kd_penyakit
@@ -342,18 +353,17 @@ func (r *dashboardRepository) queryPasienBaris(
 	for rows.Next() {
 		var row ModelsPasien.PasienBaris
 		var jk, statusLanjut string
+		var tglMasuk, tglKeluar sql.NullTime
 		if err := rows.Scan(
 			&row.ID, &row.Nama, &row.NoTelepon, &row.Diagnosa,
 			&row.TglLahir, &row.Umur, &jk, &statusLanjut,
-			&row.Penjamin, &row.Ruangan, &row.NoRawat,
+			&row.Penjamin, &row.Ruangan, &tglMasuk, &tglKeluar, &row.NoRawat,
 		); err != nil {
 			return nil, 0, err
 		}
-		row.JenisKelamin = labelJenisKelamin(jk)
-		row.Rawat = labelStatusLanjut(statusLanjut)
-		if statusLanjut == "-" {
-			row.Rawat = "-"
-		}
+		row.TglMasuk = nullTimeToPtr(tglMasuk)
+		row.TglKeluar = nullTimeToPtr(tglKeluar)
+		applyPasienBarisLabels(&row, jk, statusLanjut)
 		list = append(list, row)
 	}
 	if list == nil {

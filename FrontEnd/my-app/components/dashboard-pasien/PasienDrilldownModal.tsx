@@ -28,9 +28,11 @@ function formatDate(iso: string) {
 function PasienRowCard({
   row,
   showRuangan,
+  showTanggalPerawatan,
 }: {
   row: PasienBaris;
   showRuangan?: boolean;
+  showTanggalPerawatan?: boolean;
 }) {
   return (
     <article className="rounded-xl border border-zinc-100 bg-zinc-50/50 p-3.5 sm:p-4">
@@ -62,6 +64,22 @@ function PasienRowCard({
           </dt>
           <dd className="mt-0.5 text-zinc-800">{row.jenis_kelamin}</dd>
         </div>
+        {showTanggalPerawatan ? (
+          <>
+            <div>
+              <dt className="text-[11px] font-medium tracking-wide text-zinc-400 uppercase">
+                Tgl masuk
+              </dt>
+              <dd className="mt-0.5 text-zinc-800">{formatDate(row.tgl_masuk ?? "")}</dd>
+            </div>
+            <div>
+              <dt className="text-[11px] font-medium tracking-wide text-zinc-400 uppercase">
+                Tgl keluar
+              </dt>
+              <dd className="mt-0.5 text-zinc-800">{formatDate(row.tgl_keluar ?? "")}</dd>
+            </div>
+          </>
+        ) : null}
         <div className="col-span-2">
           <dt className="text-[11px] font-medium tracking-wide text-zinc-400 uppercase">
             Diagnosa
@@ -92,9 +110,11 @@ function PasienRowCard({
 function PasienRowTable({
   row,
   showRuangan,
+  showTanggalPerawatan,
 }: {
   row: PasienBaris;
   showRuangan?: boolean;
+  showTanggalPerawatan?: boolean;
 }) {
   return (
     <tr className="border-b border-zinc-50 text-zinc-700">
@@ -105,6 +125,16 @@ function PasienRowTable({
         <span className="block text-xs text-zinc-400">{formatDate(row.tgl_lahir)}</span>
       </td>
       <td className="py-2.5 pr-3">{row.jenis_kelamin}</td>
+      {showTanggalPerawatan ? (
+        <>
+          <td className="py-2.5 pr-3 whitespace-nowrap">
+            {formatDate(row.tgl_masuk ?? "")}
+          </td>
+          <td className="py-2.5 pr-3 whitespace-nowrap">
+            {formatDate(row.tgl_keluar ?? "")}
+          </td>
+        </>
+      ) : null}
       <td className="py-2.5 pr-3">{row.rawat}</td>
       {showRuangan ? (
         <td className="max-w-[200px] py-2.5 pr-3" title={row.ruangan}>
@@ -208,6 +238,11 @@ export default function PasienDrilldownModal({
   if (!config) return null;
 
   const showRuangan = config.tipe === "status_inap_aktif";
+  const showTanggalPerawatan =
+    config.tipe === "ringkasan_ralan" ||
+    config.tipe === "ringkasan_ranap" ||
+    config.tipe === "status_jalan_aktif" ||
+    config.tipe === "status_inap_aktif";
   const hasMore = rows.length < total;
 
   return (
@@ -267,6 +302,7 @@ export default function PasienDrilldownModal({
                     key={`${row.id}-${row.no_rawat ?? ""}`}
                     row={row}
                     showRuangan={showRuangan}
+                    showTanggalPerawatan={showTanggalPerawatan}
                   />
                 ))}
               </div>
@@ -279,6 +315,12 @@ export default function PasienDrilldownModal({
                       <th className="pb-2 pr-3 font-medium">Nama</th>
                       <th className="pb-2 pr-3 font-medium">Umur</th>
                       <th className="pb-2 pr-3 font-medium">Gender</th>
+                      {showTanggalPerawatan ? (
+                        <>
+                          <th className="pb-2 pr-3 font-medium">Tgl masuk</th>
+                          <th className="pb-2 pr-3 font-medium">Tgl keluar</th>
+                        </>
+                      ) : null}
                       <th className="pb-2 pr-3 font-medium">Rawat</th>
                       {showRuangan ? (
                         <th className="pb-2 pr-3 font-medium">Ruangan</th>
@@ -293,6 +335,7 @@ export default function PasienDrilldownModal({
                         key={`${row.id}-${row.no_rawat ?? ""}-table`}
                         row={row}
                         showRuangan={showRuangan}
+                        showTanggalPerawatan={showTanggalPerawatan}
                       />
                     ))}
                   </tbody>

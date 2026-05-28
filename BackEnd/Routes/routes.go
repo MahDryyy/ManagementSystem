@@ -10,6 +10,8 @@ import (
 
 func Setup(
 	router *gin.Engine,
+	authCtrl *controllers.AuthController,
+	adminCtrl *controllers.AdminController,
 	dashboardCtrl *controllers.DashboardController,
 	diagnosaCtrl *controllers.DiagnosaController,
 ) {
@@ -19,19 +21,41 @@ func Setup(
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
-	pasien := router.Group("/api/dashboard/pasien")
+	auth := router.Group("/api/auth")
 	{
-		pasien.GET("", dashboardCtrl.GetDashboard)
-		pasien.GET("/ringkasan", dashboardCtrl.GetRingkasan)
-		pasien.GET("/kategori-umur", dashboardCtrl.GetKategoriUmur)
-		pasien.GET("/status-perawatan", dashboardCtrl.GetStatusPerawatan)
-		pasien.GET("/daftar", dashboardCtrl.GetDaftarPasien)
-		pasien.GET("/drilldown", dashboardCtrl.GetDrilldownPasien)
-		pasien.GET("/:no_rkm_medis", dashboardCtrl.GetPasienDetail)
+		auth.POST("/login", authCtrl.Login)
+		auth.GET("/me", cors.AuthRequired(), authCtrl.Me)
+		auth.GET("/dashboard-keys", cors.AuthRequired(), authCtrl.DashboardKeys)
 	}
 
-	diagnosa := router.Group("/api/dashboard/diagnosa")
+	admin := router.Group("/api/admin", cors.AuthRequired(), cors.SuperadminRequired())
 	{
-		diagnosa.GET("/terbanyak", diagnosaCtrl.GetDiagnosaTerbanyak)
+		admin.GET("/roles", adminCtrl.ListRoles)
+		admin.POST("/roles", adminCtrl.CreateRole)
+		admin.PUT("/roles/:id", adminCtrl.UpdateRole)
+		admin.DELETE("/roles/:id", adminCtrl.DeleteRole)
+		admin.GET("/users", adminCtrl.ListUsers)
+		admin.POST("/users", adminCtrl.CreateUser)
+		admin.PUT("/users/:id", adminCtrl.UpdateUser)
+		admin.DELETE("/users/:id", adminCtrl.DeleteUser)
+	}
+
+	api := router.Group("/api", cors.AuthRequired())
+	{
+		pasien := api.Group("/dashboard/pasien")
+		{
+			pasien.GET("", dashboardCtrl.GetDashboard)
+			pasien.GET("/ringkasan", dashboardCtrl.GetRingkasan)
+			pasien.GET("/kategori-umur", dashboardCtrl.GetKategoriUmur)
+			pasien.GET("/status-perawatan", dashboardCtrl.GetStatusPerawatan)
+			pasien.GET("/daftar", dashboardCtrl.GetDaftarPasien)
+			pasien.GET("/drilldown", dashboardCtrl.GetDrilldownPasien)
+			pasien.GET("/:no_rkm_medis", dashboardCtrl.GetPasienDetail)
+		}
+
+		diagnosa := api.Group("/dashboard/diagnosa")
+		{
+			diagnosa.GET("/terbanyak", diagnosaCtrl.GetDiagnosaTerbanyak)
+		}
 	}
 }

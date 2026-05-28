@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@/lib/config";
+import { apiGet, buildQuery } from "@/lib/api/http";
 import type { DrilldownTipe } from "@/lib/drilldown";
 import type {
   DaftarPasienResponse,
@@ -10,28 +10,6 @@ import type {
   PasienDetail,
   PasienFilterParams,
 } from "@/lib/types/dashboard-pasien";
-
-function buildQuery(params: Record<string, string | number | undefined>) {
-  const q = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== "") {
-      q.set(key, String(value));
-    }
-  }
-  const s = q.toString();
-  return s ? `?${s}` : "";
-}
-
-async function apiGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`);
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(
-      (body as { error?: string }).error ?? `Request gagal (${res.status})`,
-    );
-  }
-  return res.json() as Promise<T>;
-}
 
 export function fetchDashboardPasien(params?: PasienFilterParams) {
   return apiGet<DashboardPasienResponse>(

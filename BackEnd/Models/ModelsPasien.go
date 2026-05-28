@@ -109,8 +109,10 @@ type PasienBaris struct {
 	JenisKelamin string    `json:"jenis_kelamin"` // Laki-laki | Perempuan (label UI)
 	Rawat        string    `json:"rawat"`         // Rawat Inap | Rawat Jalan
 	Penjamin     string    `json:"penjamin"`      // BPJS, Umum, dll. (png_jawab)
-	Ruangan      string    `json:"ruangan,omitempty"` // bangsal · kamar (rawat inap aktif)
-	NoRawat      string    `json:"no_rawat,omitempty"`
+	Ruangan      string     `json:"ruangan,omitempty"` // bangsal · kamar (rawat inap aktif)
+	NoRawat      string     `json:"no_rawat,omitempty"`
+	TglMasuk     *time.Time `json:"tgl_masuk,omitempty"`  // registrasi / masuk kamar
+	TglKeluar    *time.Time `json:"tgl_keluar,omitempty"` // pulang kamar / kunjungan selesai
 }
 
 // PasienDetail profil lengkap pasien (drawer / halaman detail).

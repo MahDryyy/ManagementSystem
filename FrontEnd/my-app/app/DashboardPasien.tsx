@@ -29,6 +29,8 @@ import FadeIn from "@/components/ui/FadeIn";
 import type { DrilldownModalConfig } from "@/lib/drilldown";
 import { periodeLabel } from "@/lib/drilldown";
 
+const DAFTAR_PAGE_SIZE = 20;
+
 export default function DashboardPasien() {
   const [dashboard, setDashboard] = useState<DashboardPasienResponse | null>(
     null,
@@ -39,6 +41,7 @@ export default function DashboardPasien() {
 
   const [loading, setLoading] = useState(true);
   const [tableLoading, setTableLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [diagnosaLoading, setDiagnosaLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -98,27 +101,43 @@ export default function DashboardPasien() {
   }, []);
 
   const loadPatients = useCallback(
-    async (cari: string, jk: string, penjamin: PenjaminFilter) => {
-      setTableLoading(true);
+    async (
+      cari: string,
+      jk: string,
+      penjamin: PenjaminFilter,
+      offset = 0,
+      append = false,
+    ) => {
+      if (append) setLoadingMore(true);
+      else setTableLoading(true);
       try {
         const res = await fetchDaftarPasien({
           cari: cari.trim() || undefined,
           jenis_kelamin: jk || undefined,
           penjamin: penjamin || undefined,
-          limit: 20,
-          offset: 0,
+          limit: DAFTAR_PAGE_SIZE,
+          offset,
         });
-        setPatients(res.data ?? []);
         setPatientsTotal(res.total);
+        setPatients((prev) =>
+          append ? [...prev, ...(res.data ?? [])] : (res.data ?? []),
+        );
       } catch {
-        setPatients([]);
-        setPatientsTotal(0);
+        if (!append) {
+          setPatients([]);
+          setPatientsTotal(0);
+        }
       } finally {
         setTableLoading(false);
+        setLoadingMore(false);
       }
     },
     [],
   );
+
+  const loadMorePatients = useCallback(() => {
+    loadPatients(search, filterGender, filterPenjamin, patients.length, true);
+  }, [loadPatients, search, filterGender, filterPenjamin, patients.length]);
 
   useEffect(() => {
     loadDashboard();
@@ -300,6 +319,9 @@ export default function DashboardPasien() {
           rows={patients}
           total={patientsTotal}
           loading={tableLoading}
+          loadingMore={loadingMore}
+          hasMore={patients.length < patientsTotal}
+          onLoadMore={loadMorePatients}
           search={search}
           onSearchChange={setSearch}
           filterGender={filterGender}

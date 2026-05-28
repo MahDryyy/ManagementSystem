@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import DashboardPasien from "@/app/DashboardPasien";
 import DashboardHeader from "@/components/DashboardHeader";
+import LoginPage from "@/components/LoginPage";
+import SettingsPage from "@/components/settings/SettingsPage";
 import Sidebar from "@/components/Sidebar";
+import { useAuth } from "@/contexts/AuthContext";
 import { DEFAULT_ROUTE, type AppRoute } from "@/lib/routes";
 
 const LG_BREAKPOINT = 1024;
@@ -33,11 +36,26 @@ function isLargeViewport() {
 }
 
 export default function AppShell() {
+  const { user, loading, logout, canAccess, firstAllowedRoute } = useAuth();
   const [activeRoute, setActiveRoute] = useState<AppRoute>(DEFAULT_ROUTE);
   const [headerSearch, setHeaderSearch] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [desktopCollapsed, setDesktopCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  const allowedRoutes: AppRoute[] = user
+    ? (
+        [
+          "dashboard",
+          "dashboard-pasien",
+          "dashboard-obat",
+          "dashboard-website",
+          "dashboard-laporan",
+          "dashboard-keuangan",
+          "settings",
+        ] as AppRoute[]
+      ).filter((r) => canAccess(r))
+    : [];
 
   useEffect(() => {
     setMounted(true);
@@ -48,6 +66,13 @@ export default function AppShell() {
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    if (!canAccess(activeRoute) && activeRoute !== "help") {
+      setActiveRoute(firstAllowedRoute());
+    }
+  }, [user, activeRoute, canAccess, firstAllowedRoute]);
 
   const closeSidebar = useCallback(() => {
     setMobileOpen(false);
@@ -62,10 +87,31 @@ export default function AppShell() {
     }
   }, []);
 
-  const handleNavigate = useCallback((route: AppRoute) => {
-    setActiveRoute(route);
-    setMobileOpen(false);
-  }, []);
+  const handleNavigate = useCallback(
+    (route: AppRoute) => {
+      if (route !== "help" && !canAccess(route)) return;
+      setActiveRoute(route);
+      setMobileOpen(false);
+    },
+    [canAccess],
+  );
+
+  const handleLogout = useCallback(() => {
+    logout();
+    setActiveRoute(DEFAULT_ROUTE);
+  }, [logout]);
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center bg-zinc-50 text-sm text-zinc-400">
+        Memuat…
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginPage />;
+  }
 
   const isSidebarOpen = mounted
     ? isLargeViewport()
@@ -73,16 +119,18 @@ export default function AppShell() {
       : mobileOpen
     : false;
 
-  const showPasienDashboard = activeRoute === "dashboard-pasien";
+  const renderMain = () => {
+    if (activeRoute === "dashboard-pasien") return <DashboardPasien />;
+    if (activeRoute === "settings") return <SettingsPage />;
+    return <PlaceholderPage title={routeTitles[activeRoute]} />;
+  };
 
   return (
     <div className="relative flex h-full overflow-hidden bg-zinc-50">
       <div
         role="presentation"
         className={`fixed inset-0 z-30 bg-zinc-900/40 transition-opacity duration-300 lg:hidden ${
-          mobileOpen
-            ? "opacity-100"
-            : "pointer-events-none opacity-0"
+          mobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
         onClick={closeSidebar}
       />
@@ -93,9 +141,8 @@ export default function AppShell() {
         mobileOpen={mobileOpen}
         desktopCollapsed={desktopCollapsed}
         onClose={closeSidebar}
-        onLogout={() => {
-          console.log("logout");
-        }}
+        allowedRoutes={allowedRoutes}
+        onLogout={handleLogout}
       />
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
@@ -105,12 +152,7 @@ export default function AppShell() {
           onMenuToggle={toggleSidebar}
           isSidebarOpen={isSidebarOpen}
         />
-
-        {showPasienDashboard ? (
-          <DashboardPasien />
-        ) : (
-          <PlaceholderPage title={routeTitles[activeRoute]} />
-        )}
+        {renderMain()}
       </div>
     </div>
   );
