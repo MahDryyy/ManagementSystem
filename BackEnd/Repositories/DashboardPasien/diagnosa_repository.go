@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	ModelsPasien "BackEnd/Models"
+	ModelsPasien "BackEnd/Models/ModelsPasien"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -76,7 +76,6 @@ func (r *diagnosaRepository) GetDiagnosaTerbanyak(filter ModelsPasien.DiagnosaTe
 	return items, total, rows.Err()
 }
 
-// periodeRegistrasiAndClause filter tanggal registrasi untuk query dengan JOIN reg_periksa.
 func periodeRegistrasiAndClause(periode string) (string, error) {
 	clause, err := periodeDateClause(periode)
 	if err != nil {
@@ -107,7 +106,6 @@ func periodeDateClause(periode string) (string, error) {
 	}
 }
 
-// ResolvePeriode menormalisasi nilai query periode ke konstanta standar.
 func ResolvePeriode(periode string) (string, error) {
 	p := normalizePeriode(periode)
 	switch p {

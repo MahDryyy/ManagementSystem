@@ -1,7 +1,7 @@
 package services
 
 import (
-	ModelsAuth "BackEnd/ModelsAuth"
+	ModelsAuth "BackEnd/Models/ModelsAuth"
 	repositories "BackEnd/Repositories"
 	"errors"
 	"fmt"

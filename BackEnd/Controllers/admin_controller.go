@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	ModelsAuth "BackEnd/ModelsAuth"
+	ModelsAuth "BackEnd/Models/ModelsAuth"
 	cors "BackEnd/Middleware"
 	"BackEnd/Services"
 	"net/http"

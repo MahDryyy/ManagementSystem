@@ -1,8 +1,8 @@
 package services
 
 import (
-	ModelsPasien "BackEnd/Models"
-	repositories "BackEnd/Repositories"
+	ModelsPasien "BackEnd/Models/ModelsPasien"
+	repositories "BackEnd/Repositories/DashboardPasien"
 )
 
 type DiagnosaService interface {

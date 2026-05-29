@@ -1,8 +1,8 @@
 package controllers
 
 import (
-	ModelsPasien "BackEnd/Models"
-	"BackEnd/Services"
+	ModelsPasien "BackEnd/Models/ModelsPasien"
+	servicesDashboardPasien "BackEnd/Services/DashboardPasienServices"
 	"net/http"
 	"strconv"
 	"strings"
@@ -11,10 +11,10 @@ import (
 )
 
 type DiagnosaController struct {
-	svc services.DiagnosaService
+	svc servicesDashboardPasien.DiagnosaService
 }
 
-func NewDiagnosaController(svc services.DiagnosaService) *DiagnosaController {
+func NewDiagnosaController(svc servicesDashboardPasien.DiagnosaService) *DiagnosaController {
 	return &DiagnosaController{svc: svc}
 }
 

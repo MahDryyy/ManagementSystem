@@ -17,6 +17,7 @@ export type StatusPerawatan = {
 
 export type PasienBaris = {
   id: string;
+  no_rkm_medis?: string;
   nama: string;
   no_telepon: string;
   diagnosa: string;

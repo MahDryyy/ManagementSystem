@@ -39,7 +39,14 @@ function PasienRowCard({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="truncate font-semibold text-zinc-900">{row.nama}</p>
-          <p className="mt-0.5 text-xs font-medium text-cyan-700">{row.id}</p>
+          <p className="mt-0.5 font-mono text-xs font-medium text-cyan-700">
+            RM: {row.no_rkm_medis || row.id}
+          </p>
+          {row.no_rawat ? (
+            <p className="mt-0.5 font-mono text-[11px] text-zinc-500">
+              Rawat: {row.no_rawat}
+            </p>
+          ) : null}
         </div>
         <span className="shrink-0 rounded-full bg-white px-2.5 py-0.5 text-xs font-medium text-zinc-600 ring-1 ring-zinc-200">
           {row.rawat}
@@ -118,7 +125,12 @@ function PasienRowTable({
 }) {
   return (
     <tr className="border-b border-zinc-50 text-zinc-700">
-      <td className="py-2.5 pr-3 font-medium whitespace-nowrap">{row.id}</td>
+      <td className="py-2.5 pr-3 font-mono text-xs font-medium whitespace-nowrap">
+        {row.no_rkm_medis || row.id}
+      </td>
+      <td className="py-2.5 pr-3 font-mono text-xs whitespace-nowrap text-cyan-800">
+        {row.no_rawat || "-"}
+      </td>
       <td className="py-2.5 pr-3">{row.nama}</td>
       <td className="py-2.5 pr-3 whitespace-nowrap">
         {row.umur} th
@@ -311,7 +323,8 @@ export default function PasienDrilldownModal({
                 <table className="w-full min-w-[640px] text-left text-sm">
                   <thead>
                     <tr className="border-b border-zinc-100 text-zinc-500">
-                      <th className="pb-2 pr-3 font-medium">ID</th>
+                      <th className="pb-2 pr-3 font-medium">No. Rekam Medis</th>
+                      <th className="pb-2 pr-3 font-medium">No. Rawat</th>
                       <th className="pb-2 pr-3 font-medium">Nama</th>
                       <th className="pb-2 pr-3 font-medium">Umur</th>
                       <th className="pb-2 pr-3 font-medium">Gender</th>

@@ -1,8 +1,7 @@
-
 package repositories
 
 import (
-	ModelsPasien "BackEnd/Models"
+	ModelsPasien "BackEnd/Models/ModelsPasien"
 	"database/sql"
 	"fmt"
 	"time"
@@ -16,8 +15,8 @@ func (r *dashboardRepository) GetPasienDetail(noRkmMedis string) (ModelsPasien.P
 
 	var (
 		jk, golDarah, agama, sttsNikah, pekerjaan, umurLabel, pnd, nmIbu sql.NullString
-		tglLahir, tglDaftar                                                sql.NullTime
-		umurTahun                                                          int
+		tglLahir, tglDaftar                                              sql.NullTime
+		umurTahun                                                        int
 	)
 
 	err := r.db.QueryRow(`

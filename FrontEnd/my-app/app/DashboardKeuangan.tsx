@@ -1,0 +1,313 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  fetchGrafikPemasukan,
+  fetchGrafikPengeluaran,
+  fetchHistoriKeuangan,
+  fetchKeuanganTotal,
+  fetchPemasukanKategori,
+  fetchPendapatanAkun,
+  fetchRingkasanKeuangan,
+} from "@/lib/api/dashboard-keuangan";
+import type {
+  GrafikGranularity,
+  GrafikTitik,
+  HistoriItem,
+  KeuanganPeriode,
+  KeuanganTotalTitik,
+  PemasukanKategoriItem,
+  PendapatanAkunRow,
+  RingkasanPemasukan,
+  TotalPerAkun,
+} from "@/lib/types/dashboard-keuangan";
+import HistoriList from "@/components/dashboard-keuangan/HistoriList";
+import KeuanganTotalChart from "@/components/dashboard-keuangan/KeuanganTotalChart";
+import LineChartCard from "@/components/dashboard-keuangan/LineChartCard";
+import PemasukanDonut from "@/components/dashboard-keuangan/PemasukanDonut";
+import PendapatanTable from "@/components/dashboard-keuangan/PendapatanTable";
+import FadeIn from "@/components/ui/FadeIn";
+
+const TABLE_PAGE = 20;
+
+export default function DashboardKeuangan() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [ringkasan, setRingkasan] = useState<RingkasanPemasukan>({
+    harian: 0,
+    mingguan: 0,
+    bulanan: 0,
+  });
+  const [grafikPemasukan, setGrafikPemasukan] = useState<GrafikTitik[]>([]);
+  const [grafikPengeluaran, setGrafikPengeluaran] = useState<GrafikTitik[]>([]);
+  const [grafikGranularity, setGrafikGranularity] =
+    useState<GrafikGranularity>("day");
+  const [grafikLoading, setGrafikLoading] = useState(false);
+
+  const [keuanganTotal, setKeuanganTotal] = useState<KeuanganTotalTitik[]>([]);
+  const [totalPeriode, setTotalPeriode] =
+    useState<KeuanganPeriode>("bulan_ini");
+  const [totalLoading, setTotalLoading] = useState(false);
+
+  const [kategori, setKategori] = useState<PemasukanKategoriItem[]>([]);
+  const [histori, setHistori] = useState<HistoriItem[]>([]);
+
+  const [rows, setRows] = useState<PendapatanAkunRow[]>([]);
+  const [rowsTotal, setRowsTotal] = useState(0);
+  const [grandTotal, setGrandTotal] = useState(0);
+  const [perAkun, setPerAkun] = useState<TotalPerAkun[]>([]);
+  const [tableLoading, setTableLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [periode, setPeriode] = useState<KeuanganPeriode>("bulan_ini");
+  const [filterJenis, setFilterJenis] = useState<"" | "ralan" | "ranap">("");
+  const [tableError, setTableError] = useState<string | null>(null);
+  const [showFullTable, setShowFullTable] = useState(false);
+  const tableRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (showFullTable && tableRef.current) {
+      tableRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [showFullTable]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 350);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const loadOverview = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [ring, kat, hist] = await Promise.all([
+        fetchRingkasanKeuangan(),
+        fetchPemasukanKategori("bulan_ini"),
+        fetchHistoriKeuangan(8, 0),
+      ]);
+      setRingkasan(ring);
+      setKategori(kat);
+      setHistori(hist.data ?? []);
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Gagal memuat dashboard keuangan",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const loadGrafik = useCallback(async (g: GrafikGranularity) => {
+    setGrafikLoading(true);
+    try {
+      const [pem, peng] = await Promise.all([
+        fetchGrafikPemasukan(g),
+        fetchGrafikPengeluaran(g),
+      ]);
+      setGrafikPemasukan(pem);
+      setGrafikPengeluaran(peng);
+    } catch {
+      setGrafikPemasukan([]);
+      setGrafikPengeluaran([]);
+    } finally {
+      setGrafikLoading(false);
+    }
+  }, []);
+
+  const loadKeuanganTotal = useCallback(async (p: KeuanganPeriode) => {
+    setTotalLoading(true);
+    try {
+      const data = await fetchKeuanganTotal(p);
+      setKeuanganTotal(data);
+    } catch {
+      setKeuanganTotal([]);
+    } finally {
+      setTotalLoading(false);
+    }
+  }, []);
+
+  const loadTable = useCallback(
+    async (
+      cari: string,
+      p: KeuanganPeriode,
+      jenis: "" | "ralan" | "ranap",
+      offset = 0,
+      append = false,
+    ) => {
+      if (append) setLoadingMore(true);
+      else {
+        setTableLoading(true);
+        setTableError(null);
+      }
+      try {
+        const res = await fetchPendapatanAkun({
+          periode: p,
+          cari: cari.trim() || undefined,
+          jenis_rawat: jenis || undefined,
+          limit: TABLE_PAGE,
+          offset,
+        });
+        setRowsTotal(res.total);
+        setGrandTotal(res.grand_total);
+        setPerAkun(res.per_akun ?? []);
+        setRows((prev) =>
+          append ? [...prev, ...(res.data ?? [])] : (res.data ?? []),
+        );
+      } catch (e) {
+        const msg =
+          e instanceof Error ? e.message : "Gagal memuat data pendapatan";
+        setTableError(msg);
+        if (!append) {
+          setRows([]);
+          setRowsTotal(0);
+          setGrandTotal(0);
+          setPerAkun([]);
+        }
+      } finally {
+        setTableLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    loadOverview();
+    loadGrafik("day");
+    loadKeuanganTotal("bulan_ini");
+    loadTable("", "bulan_ini", "", 0, false);
+  }, [loadOverview, loadGrafik, loadKeuanganTotal, loadTable]);
+
+  useEffect(() => {
+    loadGrafik(grafikGranularity);
+  }, [grafikGranularity, loadGrafik]);
+
+  useEffect(() => {
+    loadKeuanganTotal(totalPeriode);
+  }, [totalPeriode, loadKeuanganTotal]);
+
+  useEffect(() => {
+    loadTable(debouncedSearch, periode, filterJenis, 0, false);
+  }, [debouncedSearch, periode, filterJenis, loadTable]);
+
+  const hasMore = rows.length < rowsTotal;
+
+  if (error && !loading && rows.length === 0) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-8">
+        <p className="text-sm text-red-600">{error}</p>
+        <button
+          type="button"
+          onClick={() => {
+            loadOverview();
+            loadTable(debouncedSearch, periode, filterJenis);
+          }}
+          className="rounded-lg bg-cyan-600 px-4 py-2 text-sm text-white"
+        >
+          Coba lagi
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-0 flex-1 overflow-y-auto bg-zinc-50 p-4 sm:p-6 lg:p-8">
+      <FadeIn className="mb-6">
+        <h2 className="text-xl font-bold text-zinc-900 sm:text-2xl">
+          Dashboard Keuangan
+        </h2>
+        <p className="mt-1 text-sm text-zinc-500">
+          Arahkan kursor ke grafik untuk melihat nominal per titik.
+        </p>
+      </FadeIn>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <FadeIn delayMs={80}>
+          <LineChartCard
+            title="Grafik Pengeluaran"
+            data={grafikPengeluaran}
+            color="#f97316"
+            seriesName="Pengeluaran"
+            granularity={grafikGranularity}
+            onGranularityChange={setGrafikGranularity}
+            loading={grafikLoading || loading}
+            subtitle="Data pengeluaran menyusul"
+          />
+        </FadeIn>
+        <FadeIn delayMs={160}>
+          <LineChartCard
+            title="Grafik Pemasukan"
+            data={grafikPemasukan}
+            color="#22c55e"
+            seriesName="Pemasukan"
+            granularity={grafikGranularity}
+            onGranularityChange={setGrafikGranularity}
+            loading={grafikLoading || loading}
+          />
+        </FadeIn>
+      </div>
+
+      <FadeIn delayMs={240} className="mt-4">
+        <KeuanganTotalChart
+          data={keuanganTotal}
+          periode={totalPeriode}
+          onPeriodeChange={setTotalPeriode}
+          loading={totalLoading && keuanganTotal.length === 0}
+        />
+      </FadeIn>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <FadeIn delayMs={320}>
+          <PemasukanDonut
+            ringkasan={ringkasan}
+            kategori={kategori}
+            loading={loading}
+          />
+        </FadeIn>
+        <FadeIn delayMs={400}>
+          <HistoriList
+            items={histori}
+            loading={loading}
+            onViewAll={() => setShowFullTable(true)}
+          />
+        </FadeIn>
+      </div>
+
+      <FadeIn delayMs={480} className="mt-6">
+        <div ref={tableRef}>
+          {tableError && (
+            <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {tableError}
+            </p>
+          )}
+          <PendapatanTable
+            rows={rows}
+            total={rowsTotal}
+            grandTotal={grandTotal}
+            perAkun={perAkun}
+            loading={tableLoading && rows.length === 0}
+            loadingMore={loadingMore}
+            hasMore={hasMore}
+            onLoadMore={() =>
+              loadTable(
+                debouncedSearch,
+                periode,
+                filterJenis,
+                rows.length,
+                true,
+              )
+            }
+            search={search}
+            onSearchChange={setSearch}
+            periode={periode}
+            onPeriodeChange={setPeriode}
+            filterJenis={filterJenis}
+            onFilterJenisChange={setFilterJenis}
+          />
+        </div>
+      </FadeIn>
+    </div>
+  );
+}

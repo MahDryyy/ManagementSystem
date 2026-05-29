@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	ModelsPasien "BackEnd/Models"
+	ModelsPasien "BackEnd/Models/ModelsPasien"
 	"database/sql"
 	"fmt"
 )

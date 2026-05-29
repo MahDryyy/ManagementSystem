@@ -58,6 +58,10 @@ export default function PatientsTable({
           <p className="mt-0.5 text-sm text-zinc-500">
             Menampilkan {rows.length} dari {total.toLocaleString("id-ID")}
             {onRowClick ? " · Klik baris untuk detail" : ""}
+            {" · "}
+            <span className="text-zinc-400">
+              No. rekam medis = pasien; no. rawat = kunjungan
+            </span>
           </p>
         </div>
 
@@ -68,7 +72,7 @@ export default function PatientsTable({
               type="search"
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Cari nama, ID, alamat…"
+              placeholder="Cari nama, no. RM, alamat…"
               className="w-full rounded-lg border border-zinc-200 bg-white py-2 pr-3 pl-9 text-sm text-black placeholder:text-zinc-400 outline-none focus:border-cyan-300 focus:ring-2 focus:ring-cyan-100"
             />
           </div>
@@ -100,10 +104,11 @@ export default function PatientsTable({
       </div>
 
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[720px] text-left text-sm">
+        <table className="w-full min-w-[880px] text-left text-sm">
           <thead>
             <tr className="border-b border-zinc-100 text-zinc-500">
-              <th className="pb-3 pr-4 font-medium">ID</th>
+              <th className="pb-3 pr-4 font-medium">No. Rekam Medis</th>
+              <th className="pb-3 pr-4 font-medium">No. Rawat</th>
               <th className="pb-3 pr-4 font-medium">Nama</th>
               <th className="pb-3 pr-4 font-medium">Telepon</th>
               <th className="pb-3 pr-4 font-medium">Diagnosa</th>
@@ -117,14 +122,14 @@ export default function PatientsTable({
             {loading ? (
               Array.from({ length: 6 }).map((_, i) => (
                 <tr key={i} className="border-b border-zinc-50 last:border-0">
-                  <td colSpan={8} className="py-2">
+                  <td colSpan={9} className="py-2">
                     <Skeleton className="h-10 w-full rounded-lg" />
                   </td>
                 </tr>
               ))
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={8} className="py-10 text-center text-zinc-400">
+                <td colSpan={9} className="py-10 text-center text-zinc-400">
                   Tidak ada data pasien.
                 </td>
               </tr>
@@ -136,8 +141,11 @@ export default function PatientsTable({
                   className={onRowClick ? "cursor-pointer hover:bg-cyan-50/40" : undefined}
                   onClick={onRowClick ? () => onRowClick(row) : undefined}
                 >
-                  <td className="py-3 pr-4 font-medium text-zinc-800">
-                    {row.id}
+                  <td className="py-3 pr-4 font-mono text-xs font-medium text-zinc-800">
+                    {row.no_rkm_medis || row.id}
+                  </td>
+                  <td className="py-3 pr-4 font-mono text-xs text-cyan-800">
+                    {row.no_rawat || "-"}
                   </td>
                   <td className="py-3 pr-4">{row.nama}</td>
                   <td className="py-3 pr-4">{row.no_telepon || "-"}</td>

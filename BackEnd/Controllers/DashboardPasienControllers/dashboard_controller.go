@@ -1,8 +1,8 @@
 package controllers
 
 import (
-	ModelsPasien "BackEnd/Models"
-	"BackEnd/Services"
+	ModelsPasien "BackEnd/Models/ModelsPasien"
+	servicesDashboardPasien "BackEnd/Services/DashboardPasienServices"
 	"net/http"
 	"strconv"
 	"strings"
@@ -11,10 +11,10 @@ import (
 )
 
 type DashboardController struct {
-	svc services.DashboardService
+	svc servicesDashboardPasien.DashboardService
 }
 
-func NewDashboardController(svc services.DashboardService) *DashboardController {
+func NewDashboardController(svc servicesDashboardPasien.DashboardService) *DashboardController {
 	return &DashboardController{svc: svc}
 }
 

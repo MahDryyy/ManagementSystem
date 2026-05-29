@@ -119,7 +119,7 @@ export default function Sidebar({
           : "lg:w-[260px] lg:translate-x-0"
       }`}
     >
-      <div className="mb-8 flex items-start justify-between gap-2 px-1">
+      <div className="mb-8 flex items-start justify-between gap-2 px-1 bg-blue">
         <div className="min-w-0">
           <h1 className="text-xl font-bold tracking-tight text-zinc-800">
             AMPEL <span style={{ color: BRAND_CYAN }}>GADING</span>

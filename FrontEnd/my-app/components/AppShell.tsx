@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import DashboardKeuangan from "@/app/DashboardKeuangan";
 import DashboardPasien from "@/app/DashboardPasien";
 import DashboardHeader from "@/components/DashboardHeader";
 import LoginPage from "@/components/LoginPage";
@@ -121,6 +122,7 @@ export default function AppShell() {
 
   const renderMain = () => {
     if (activeRoute === "dashboard-pasien") return <DashboardPasien />;
+    if (activeRoute === "dashboard-keuangan") return <DashboardKeuangan />;
     if (activeRoute === "settings") return <SettingsPage />;
     return <PlaceholderPage title={routeTitles[activeRoute]} />;
   };

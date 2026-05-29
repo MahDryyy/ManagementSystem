@@ -2,6 +2,8 @@ package routes
 
 import (
 	controllers "BackEnd/Controllers"
+	controllersKeuangan "BackEnd/Controllers/DashboardKeuangan"
+	controllersDashboardPasien "BackEnd/Controllers/DashboardPasienControllers"
 	cors "BackEnd/Middleware"
 	"net/http"
 
@@ -12,8 +14,9 @@ func Setup(
 	router *gin.Engine,
 	authCtrl *controllers.AuthController,
 	adminCtrl *controllers.AdminController,
-	dashboardCtrl *controllers.DashboardController,
-	diagnosaCtrl *controllers.DiagnosaController,
+	dashboardCtrl *controllersDashboardPasien.DashboardController,
+	keuanganCtrl *controllersKeuangan.KeuanganController,
+	diagnosaCtrl *controllersDashboardPasien.DiagnosaController,
 ) {
 	router.Use(cors.CorsMiddleware())
 
@@ -51,6 +54,17 @@ func Setup(
 			pasien.GET("/daftar", dashboardCtrl.GetDaftarPasien)
 			pasien.GET("/drilldown", dashboardCtrl.GetDrilldownPasien)
 			pasien.GET("/:no_rkm_medis", dashboardCtrl.GetPasienDetail)
+		}
+
+		keuangan := api.Group("/dashboard/keuangan")
+		{
+			keuangan.GET("/ringkasan", keuanganCtrl.GetRingkasan)
+			keuangan.GET("/grafik-pemasukan", keuanganCtrl.GetGrafikPemasukan)
+			keuangan.GET("/grafik-pengeluaran", keuanganCtrl.GetGrafikPengeluaran)
+			keuangan.GET("/keuangan-total", keuanganCtrl.GetKeuanganTotal)
+			keuangan.GET("/pemasukan-kategori", keuanganCtrl.GetPemasukanKategori)
+			keuangan.GET("/histori", keuanganCtrl.GetHistori)
+			keuangan.GET("/pendapatan-akun", keuanganCtrl.GetPendapatanAkun)
 		}
 
 		diagnosa := api.Group("/dashboard/diagnosa")

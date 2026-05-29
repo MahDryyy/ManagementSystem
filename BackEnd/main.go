@@ -6,10 +6,16 @@ import (
 	"os"
 
 	controllers "BackEnd/Controllers"
+	controllersDashboardPasien "BackEnd/Controllers/DashboardPasienControllers"
 	db "BackEnd/Database"
 	repositories "BackEnd/Repositories"
+	repositoriesDashboardPasien "BackEnd/Repositories/DashboardPasien"
 	routes "BackEnd/Routes"
 	services "BackEnd/Services"
+	servicesDashboardPasien "BackEnd/Services/DashboardPasienServices"
+	servicesKeuangan "BackEnd/Services/KeuanganServices"
+	repositoriesDashboardKeuangan "BackEnd/Repositories/DashboardKeuangan"
+	controllersKeuangan "BackEnd/Controllers/DashboardKeuangan"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -32,16 +38,20 @@ func main() {
 	adminSvc := services.NewAdminService(authRepo)
 	adminCtrl := controllers.NewAdminController(adminSvc)
 
-	dashboardRepo := repositories.NewDashboardRepository(database)
-	dashboardSvc := services.NewDashboardService(dashboardRepo)
-	dashboardCtrl := controllers.NewDashboardController(dashboardSvc)
+	dashboardRepo := repositoriesDashboardPasien.NewDashboardRepository(database)
+	dashboardSvc := servicesDashboardPasien.NewDashboardService(dashboardRepo)
+	dashboardCtrl := controllersDashboardPasien.NewDashboardController(dashboardSvc)
 
-	diagnosaRepo := repositories.NewDiagnosaRepository(database)
-	diagnosaSvc := services.NewDiagnosaService(diagnosaRepo)
-	diagnosaCtrl := controllers.NewDiagnosaController(diagnosaSvc)
+	keuanganRepo := repositoriesDashboardKeuangan.NewKeuanganRepository(database)
+	keuanganSvc := servicesKeuangan.NewKeuanganService(keuanganRepo)
+	keuanganCtrl := controllersKeuangan.NewKeuanganController(keuanganSvc)
+
+	diagnosaRepo := repositoriesDashboardPasien.NewDiagnosaRepository(database)
+	diagnosaSvc := servicesDashboardPasien.NewDiagnosaService(diagnosaRepo)
+	diagnosaCtrl := controllersDashboardPasien.NewDiagnosaController(diagnosaSvc)
 
 	router := gin.Default()
-	routes.Setup(router, authCtrl, adminCtrl, dashboardCtrl, diagnosaCtrl)
+	routes.Setup(router, authCtrl, adminCtrl, dashboardCtrl, keuanganCtrl, diagnosaCtrl)
 
 	port := os.Getenv("PORT")
 	if port == "" {

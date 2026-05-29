@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	ModelsPasien "BackEnd/Models"
+	ModelsPasien "BackEnd/Models/ModelsPasien"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -183,7 +183,7 @@ func (r *dashboardRepository) GetDaftarPasien(filter ModelsPasien.PasienFilter) 
 			rp.status_lanjut,
 			IFNULL(pj.png_jawab, '-'),
 			` + sqlRuanganKosong + `,
-			` + sqlTglMasuk + `,
+			` + sqlTglMasuk + `,	
 			` + sqlTglKeluar + `,
 			rp.no_rawat
 		FROM reg_periksa rp

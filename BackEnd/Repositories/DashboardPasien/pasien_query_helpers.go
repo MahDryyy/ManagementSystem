@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	ModelsPasien "BackEnd/Models"
+	ModelsPasien "BackEnd/Models/ModelsPasien"
 	"database/sql"
 	"time"
 )
@@ -42,6 +42,7 @@ func nullTimeToPtr(nt sql.NullTime) *time.Time {
 }
 
 func applyPasienBarisLabels(row *ModelsPasien.PasienBaris, jk, statusLanjut string) {
+	row.NoRkmMedis = row.ID
 	row.JenisKelamin = labelJenisKelamin(jk)
 	row.Rawat = labelStatusLanjut(statusLanjut)
 	if statusLanjut == "-" {

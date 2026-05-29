@@ -100,7 +100,8 @@ type DashboardPasien struct {
 
 // PasienBaris satu baris tabel daftar pasien di dashboard.
 type PasienBaris struct {
-	ID           string    `json:"id"` // no_rkm_medis
+	ID           string    `json:"id"` // no_rkm_medis (kompatibilitas)
+	NoRkmMedis   string    `json:"no_rkm_medis"`
 	Nama         string    `json:"nama"`
 	NoTelepon    string    `json:"no_telepon"`
 	Diagnosa     string    `json:"diagnosa"`
