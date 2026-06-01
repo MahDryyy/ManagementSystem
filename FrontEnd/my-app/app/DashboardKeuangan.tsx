@@ -110,7 +110,7 @@ export default function DashboardKeuangan() {
       setHistori(hist.data ?? []);
     } catch (e) {
       setError(
-        e instanceof Error ? e.message : "Gagal memuat dashboard keuangan",
+        e instanceof Error ? e.message : "Gagal memuat dashboard keuangan harap restart aplikasi",
       );
     } finally {
       setLoading(false);
