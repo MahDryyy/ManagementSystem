@@ -88,6 +88,25 @@ func (ctrl *KeuanganController) GetHistori(c *gin.Context) {
 	c.JSON(http.StatusOK, data)
 }
 
+func (ctrl *KeuanganController) GetRingkasanPendapatanLaborat(c *gin.Context) {
+	data, err := ctrl.svc.GetRingkasanPendapatanLaborat()
+	if err != nil {
+		writeKeuanganError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}
+
+func (ctrl *KeuanganController) GetGrafikPendapatanLaborat(c *gin.Context) {
+	periode := c.DefaultQuery("periode", ModelsKeuangan.PeriodeBulanIni)
+	data, err := ctrl.svc.GetGrafikPendapatanLaborat(periode)
+	if err != nil {
+		writeKeuanganError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}
+
 func parsePendapatanFilter(c *gin.Context) ModelsKeuangan.PendapatanAkunFilter {
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))

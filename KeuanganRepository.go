@@ -18,8 +18,6 @@ type KeuanganRepository interface {
 	GetKeuanganTotal(periode string) ([]ModelsKeuangan.KeuanganTotalTitik, error)
 	GetPemasukanPerKategori(periode string) ([]ModelsKeuangan.PemasukanKategoriItem, error)
 	GetHistori(limit, offset int) (ModelsKeuangan.HistoriResponse, error)
-	GetRingkasanPendapatanLaborat() (ModelsKeuangan.RingkasanPendapatanLaborat, error)
-	GetGrafikPendapatanLaborat(periode string) ([]ModelsKeuangan.GrafikTitik, error)
 }
 
 type keuanganRepository struct {
@@ -227,20 +225,20 @@ func buildLiteUnionParts(
 		joins := fmt.Sprintf(`
 		FROM %s d
 		INNER JOIN reg_periksa rp ON d.no_rawat = rp.no_rawat`, detailTable)
-		if needNota {
-			joins += fmt.Sprintf(`
+	if needNota {
+		joins += fmt.Sprintf(`
 		INNER JOIN %s nj ON d.no_rawat = nj.no_rawat`, notaTable)
-		}
-		if needPasien {
-			joins += `
+	}
+	if needPasien {
+		joins += `
 		INNER JOIN pasien p ON rp.no_rkm_medis = p.no_rkm_medis`
-		}
-		if needPenjab {
-			joins += `
+	}
+	if needPenjab {
+		joins += `
 		LEFT JOIN penjab pj ON rp.kd_pj = pj.kd_pj`
-		}
-		branchWhere := strings.ReplaceAll(where, "dnj.", "d.")
-		parts = append(parts, fmt.Sprintf(`
+	}
+	branchWhere := strings.ReplaceAll(where, "dnj.", "d.")
+	parts = append(parts, fmt.Sprintf(`
 			SELECT %s
 			%s
 			WHERE %s%s`, selectExpr, joins, tglRegValid, branchWhere))

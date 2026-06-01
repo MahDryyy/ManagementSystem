@@ -1,5 +1,6 @@
 "use client";
 
+import { Search } from "lucide-react";
 import {
   DIAGNOSA_PERIODE_OPTIONS,
   type DiagnosaPeriode,
@@ -15,6 +16,8 @@ type DiagnosaBarChartProps = {
   data: DiagnosaTerbanyakItem[];
   periode: DiagnosaPeriode;
   onPeriodeChange: (p: DiagnosaPeriode) => void;
+  search: string;
+  onSearchChange: (v: string) => void;
   onDiagnosaClick?: (item: DiagnosaTerbanyakItem) => void;
   loading?: boolean;
 };
@@ -39,6 +42,8 @@ export default function DiagnosaBarChart({
   data,
   periode,
   onPeriodeChange,
+  search,
+  onSearchChange,
   onDiagnosaClick,
   loading,
 }: DiagnosaBarChartProps) {
@@ -75,11 +80,24 @@ export default function DiagnosaBarChart({
         </div>
       </div>
 
+      <div className="relative mt-4">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder="Cari kode atau nama diagnosa…"
+          className="w-full rounded-lg border border-zinc-200 bg-white py-2 pr-3 pl-9 text-sm text-black placeholder:text-zinc-400 outline-none focus:border-cyan-300 focus:ring-2 focus:ring-cyan-100"
+        />
+      </div>
+
       {loading ? (
         <BarChartBodySkeleton />
       ) : data.length === 0 ? (
         <p className="mt-8 text-center text-sm text-zinc-400">
-          Belum ada data diagnosa untuk periode ini.
+          {search.trim()
+            ? "Tidak ada diagnosa yang cocok dengan pencarian."
+            : "Belum ada data diagnosa untuk periode ini."}
         </p>
       ) : (
         <ul className="mt-6 space-y-5">
@@ -119,6 +137,9 @@ export default function DiagnosaBarChart({
               >
                 <div className="mb-1.5 flex items-baseline justify-between gap-2 text-sm">
                   <span className="font-medium text-zinc-700">
+                    <span className="mr-1.5 font-mono text-xs text-zinc-400">
+                      {item.kd_penyakit}
+                    </span>
                     {item.nama_penyakit}
                   </span>
                   <span className="shrink-0 tabular-nums text-zinc-500">

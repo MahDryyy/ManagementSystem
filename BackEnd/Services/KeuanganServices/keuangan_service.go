@@ -13,6 +13,8 @@ type KeuanganService interface {
 	GetKeuanganTotal(periode string) ([]ModelsKeuangan.KeuanganTotalTitik, error)
 	GetPemasukanPerKategori(periode string) ([]ModelsKeuangan.PemasukanKategoriItem, error)
 	GetHistori(limit, offset int) (ModelsKeuangan.HistoriResponse, error)
+	GetRingkasanPendapatanLaborat() (ModelsKeuangan.RingkasanPendapatanLaborat, error)
+	GetGrafikPendapatanLaborat(periode string) ([]ModelsKeuangan.GrafikTitik, error)
 }
 
 type keuanganService struct {
@@ -49,4 +51,12 @@ func (s *keuanganService) GetPemasukanPerKategori(periode string) ([]ModelsKeuan
 
 func (s *keuanganService) GetHistori(limit, offset int) (ModelsKeuangan.HistoriResponse, error) {
 	return s.repo.GetHistori(limit, offset)
+}
+
+func (s *keuanganService) GetRingkasanPendapatanLaborat() (ModelsKeuangan.RingkasanPendapatanLaborat, error) {
+	return s.repo.GetRingkasanPendapatanLaborat()
+}
+
+func (s *keuanganService) GetGrafikPendapatanLaborat(periode string) ([]ModelsKeuangan.GrafikTitik, error) {
+	return s.repo.GetGrafikPendapatanLaborat(periode)
 }

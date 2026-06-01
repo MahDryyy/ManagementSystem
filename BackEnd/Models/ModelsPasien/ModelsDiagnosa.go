@@ -11,8 +11,9 @@ const (
 
 
 type DiagnosaTerbanyakFilter struct {
-	Periode string `json:"periode"` 
+	Periode string `json:"periode"`
 	Limit   int    `json:"limit"`
+	Cari    string `json:"cari"` // kd_penyakit atau nama_penyakit
 }
 
 

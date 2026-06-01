@@ -65,6 +65,8 @@ func Setup(
 			keuangan.GET("/pemasukan-kategori", keuanganCtrl.GetPemasukanKategori)
 			keuangan.GET("/histori", keuanganCtrl.GetHistori)
 			keuangan.GET("/pendapatan-akun", keuanganCtrl.GetPendapatanAkun)
+			keuangan.GET("/ringkasan-pendapatan-laborat", keuanganCtrl.GetRingkasanPendapatanLaborat)
+			keuangan.GET("/grafik-pendapatan-laborat", keuanganCtrl.GetGrafikPendapatanLaborat)
 		}
 
 		diagnosa := api.Group("/dashboard/diagnosa")

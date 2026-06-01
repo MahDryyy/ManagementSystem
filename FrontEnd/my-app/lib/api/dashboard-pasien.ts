@@ -42,9 +42,14 @@ export function fetchDaftarPasien(params?: PasienFilterParams) {
 export function fetchDiagnosaTerbanyak(
   periode: DiagnosaPeriode,
   limit = 10,
+  cari?: string,
 ) {
   return apiGet<DiagnosaTerbanyakResponse>(
-    `/api/dashboard/diagnosa/terbanyak${buildQuery({ periode, limit })}`,
+    `/api/dashboard/diagnosa/terbanyak${buildQuery({
+      periode,
+      limit,
+      cari: cari?.trim() || undefined,
+    })}`,
   );
 }
 

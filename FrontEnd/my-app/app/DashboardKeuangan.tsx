@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   fetchGrafikPemasukan,
+  fetchGrafikPendapatanLaborat,
   fetchGrafikPengeluaran,
   fetchHistoriKeuangan,
   fetchKeuanganTotal,
   fetchPemasukanKategori,
   fetchPendapatanAkun,
   fetchRingkasanKeuangan,
+  fetchRingkasanPendapatanLaborat,
 } from "@/lib/api/dashboard-keuangan";
 import type {
   GrafikGranularity,
@@ -19,12 +21,14 @@ import type {
   PemasukanKategoriItem,
   PendapatanAkunRow,
   RingkasanPemasukan,
+  RingkasanPendapatanLaborat,
   TotalPerAkun,
 } from "@/lib/types/dashboard-keuangan";
 import HistoriList from "@/components/dashboard-keuangan/HistoriList";
 import KeuanganTotalChart from "@/components/dashboard-keuangan/KeuanganTotalChart";
 import LineChartCard from "@/components/dashboard-keuangan/LineChartCard";
 import PemasukanDonut from "@/components/dashboard-keuangan/PemasukanDonut";
+import PendapatanLaboratPanel from "@/components/dashboard-keuangan/PendapatanLaboratPanel";
 import PendapatanTable from "@/components/dashboard-keuangan/PendapatanTable";
 import FadeIn from "@/components/ui/FadeIn";
 
@@ -49,6 +53,20 @@ export default function DashboardKeuangan() {
   const [totalPeriode, setTotalPeriode] =
     useState<KeuanganPeriode>("bulan_ini");
   const [totalLoading, setTotalLoading] = useState(false);
+
+  const [ringkasanLaborat, setRingkasanLaborat] =
+    useState<RingkasanPendapatanLaborat>({
+      harian: 0,
+      mingguan: 0,
+      bulanan: 0,
+      tahunan: 0,
+      semua: 0,
+    });
+  const [rincianLaborat, setRincianLaborat] = useState<GrafikTitik[]>([]);
+  const [laboratPeriode, setLaboratPeriode] =
+    useState<KeuanganPeriode>("bulan_ini");
+  const [laboratLoading, setLaboratLoading] = useState(false);
+  const [rincianLaboratLoading, setRincianLaboratLoading] = useState(false);
 
   const [kategori, setKategori] = useState<PemasukanKategoriItem[]>([]);
   const [histori, setHistori] = useState<HistoriItem[]>([]);
@@ -128,6 +146,36 @@ export default function DashboardKeuangan() {
     }
   }, []);
 
+  const loadRingkasanLaborat = useCallback(async () => {
+    setLaboratLoading(true);
+    try {
+      const data = await fetchRingkasanPendapatanLaborat();
+      setRingkasanLaborat(data);
+    } catch {
+      setRingkasanLaborat({
+        harian: 0,
+        mingguan: 0,
+        bulanan: 0,
+        tahunan: 0,
+        semua: 0,
+      });
+    } finally {
+      setLaboratLoading(false);
+    }
+  }, []);
+
+  const loadRincianLaborat = useCallback(async (p: KeuanganPeriode) => {
+    setRincianLaboratLoading(true);
+    try {
+      const data = await fetchGrafikPendapatanLaborat(p);
+      setRincianLaborat(data);
+    } catch {
+      setRincianLaborat([]);
+    } finally {
+      setRincianLaboratLoading(false);
+    }
+  }, []);
+
   const loadTable = useCallback(
     async (
       cari: string,
@@ -177,8 +225,10 @@ export default function DashboardKeuangan() {
     loadOverview();
     loadGrafik("day");
     loadKeuanganTotal("bulan_ini");
+    loadRingkasanLaborat();
+    loadRincianLaborat("bulan_ini");
     loadTable("", "bulan_ini", "", 0, false);
-  }, [loadOverview, loadGrafik, loadKeuanganTotal, loadTable]);
+  }, [loadOverview, loadGrafik, loadKeuanganTotal, loadRingkasanLaborat, loadRincianLaborat, loadTable]);
 
   useEffect(() => {
     loadGrafik(grafikGranularity);
@@ -187,6 +237,10 @@ export default function DashboardKeuangan() {
   useEffect(() => {
     loadKeuanganTotal(totalPeriode);
   }, [totalPeriode, loadKeuanganTotal]);
+
+  useEffect(() => {
+    loadRincianLaborat(laboratPeriode);
+  }, [laboratPeriode, loadRincianLaborat]);
 
   useEffect(() => {
     loadTable(debouncedSearch, periode, filterJenis, 0, false);
@@ -255,6 +309,17 @@ export default function DashboardKeuangan() {
           periode={totalPeriode}
           onPeriodeChange={setTotalPeriode}
           loading={totalLoading && keuanganTotal.length === 0}
+        />
+      </FadeIn>
+
+      <FadeIn delayMs={280} className="mt-4">
+        <PendapatanLaboratPanel
+          ringkasan={ringkasanLaborat}
+          rincian={rincianLaborat}
+          periode={laboratPeriode}
+          onPeriodeChange={setLaboratPeriode}
+          loading={laboratLoading}
+          rincianLoading={rincianLaboratLoading}
         />
       </FadeIn>
 

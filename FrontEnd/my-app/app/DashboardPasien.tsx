@@ -47,6 +47,8 @@ export default function DashboardPasien() {
 
   const [diagnosaPeriode, setDiagnosaPeriode] =
     useState<DiagnosaPeriode>("semua");
+  const [diagnosaSearch, setDiagnosaSearch] = useState("");
+  const [debouncedDiagnosaSearch, setDebouncedDiagnosaSearch] = useState("");
   const [kategoriUmur, setKategoriUmur] = useState<KategoriUmurItem[]>([]);
   const [kategoriUmurPeriode, setKategoriUmurPeriode] =
     useState<KategoriUmurPeriode>("semua");
@@ -76,17 +78,20 @@ export default function DashboardPasien() {
     }
   }, []);
 
-  const loadDiagnosa = useCallback(async (periode: DiagnosaPeriode) => {
-    setDiagnosaLoading(true);
-    try {
-      const res = await fetchDiagnosaTerbanyak(periode, 10);
-      setDiagnosa(res.data ?? []);
-    } catch {
-      setDiagnosa([]);
-    } finally {
-      setDiagnosaLoading(false);
-    }
-  }, []);
+  const loadDiagnosa = useCallback(
+    async (periode: DiagnosaPeriode, cari: string) => {
+      setDiagnosaLoading(true);
+      try {
+        const res = await fetchDiagnosaTerbanyak(periode, 10, cari);
+        setDiagnosa(res.data ?? []);
+      } catch {
+        setDiagnosa([]);
+      } finally {
+        setDiagnosaLoading(false);
+      }
+    },
+    [],
+  );
 
   const loadKategoriUmur = useCallback(async (periode: KategoriUmurPeriode) => {
     setKategoriUmurLoading(true);
@@ -144,8 +149,14 @@ export default function DashboardPasien() {
   }, [loadDashboard]);
 
   useEffect(() => {
-    loadDiagnosa(diagnosaPeriode);
-  }, [diagnosaPeriode, loadDiagnosa]);
+    const t = setTimeout(() => setDebouncedDiagnosaSearch(diagnosaSearch), 350);
+    return () => clearTimeout(t);
+  }, [diagnosaSearch]);
+
+  useEffect(() => {
+    if (loading) return;
+    loadDiagnosa(diagnosaPeriode, debouncedDiagnosaSearch);
+  }, [diagnosaPeriode, debouncedDiagnosaSearch, loadDiagnosa, loading]);
 
   useEffect(() => {
     loadKategoriUmur(kategoriUmurPeriode);
@@ -301,6 +312,8 @@ export default function DashboardPasien() {
           data={diagnosa}
           periode={diagnosaPeriode}
           onPeriodeChange={setDiagnosaPeriode}
+          search={diagnosaSearch}
+          onSearchChange={setDiagnosaSearch}
           onDiagnosaClick={(item) =>
             setDrilldown({
               title: item.nama_penyakit,

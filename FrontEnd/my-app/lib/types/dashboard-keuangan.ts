@@ -38,6 +38,14 @@ export type RingkasanPemasukan = {
   bulanan: number;
 };
 
+export type RingkasanPendapatanLaborat = {
+  harian: number;
+  mingguan: number;
+  bulanan: number;
+  tahunan: number;
+  semua: number;
+};
+
 export type GrafikTitik = {
   label: string;
   nilai: number;

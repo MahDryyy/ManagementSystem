@@ -8,6 +8,7 @@ import type {
   PemasukanKategoriItem,
   PendapatanAkunResponse,
   RingkasanPemasukan,
+  RingkasanPendapatanLaborat,
 } from "@/lib/types/dashboard-keuangan";
 
 export type PendapatanAkunParams = {
@@ -67,5 +68,17 @@ export function fetchPendapatanAkun(params?: PendapatanAkunParams) {
       limit: params?.limit ?? 20,
       offset: params?.offset ?? 0,
     })}`,
+  );
+}
+
+export function fetchRingkasanPendapatanLaborat() {
+  return apiGet<RingkasanPendapatanLaborat>(
+    "/api/dashboard/keuangan/ringkasan-pendapatan-laborat",
+  );
+}
+
+export function fetchGrafikPendapatanLaborat(periode: KeuanganPeriode) {
+  return apiGet<GrafikTitik[]>(
+    `/api/dashboard/keuangan/grafik-pendapatan-laborat${buildQuery({ periode })}`,
   );
 }

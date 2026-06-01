@@ -24,6 +24,7 @@ func (ctrl *DiagnosaController) GetDiagnosaTerbanyak(c *gin.Context) {
 	filter := ModelsPasien.DiagnosaTerbanyakFilter{
 		Periode: c.DefaultQuery("periode", ModelsPasien.PeriodeSemuaWaktu),
 		Limit:   limit,
+		Cari:    strings.TrimSpace(c.Query("cari")),
 	}
 
 	data, err := ctrl.svc.GetDiagnosaTerbanyak(filter)

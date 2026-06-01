@@ -63,6 +63,14 @@ type RingkasanPemasukan struct {
 	Bulanan  float64 `json:"bulanan"`
 }
 
+type RingkasanPendapatanLaborat struct {
+	Harian   float64 `json:"harian"`
+	Mingguan float64 `json:"mingguan"`
+	Bulanan  float64 `json:"bulanan"`
+	Tahunan  float64 `json:"tahunan"`
+	Semua    float64 `json:"semua"`
+}
+
 type GrafikTitik struct {
 	Label string  `json:"label"`
 	Nilai float64 `json:"nilai"`

@@ -29,14 +29,23 @@ func (r *diagnosaRepository) GetDiagnosaTerbanyak(filter ModelsPasien.DiagnosaTe
 		return nil, 0, err
 	}
 
+	searchClause, searchArgs := diagnosaSearchClause(filter.Cari)
+
 	var total int
 	countQuery := `
 		SELECT COUNT(*)
 		FROM diagnosa_pasien dp
 		INNER JOIN reg_periksa rp ON dp.no_rawat = rp.no_rawat
-	` + dateClause
-	if err := r.db.QueryRow(countQuery).Scan(&total); err != nil {
+		INNER JOIN penyakit peny ON dp.kd_penyakit = peny.kd_penyakit
+	` + dateClause + searchClause
+	countArgs := append([]any{}, searchArgs...)
+	if err := r.db.QueryRow(countQuery, countArgs...).Scan(&total); err != nil {
 		return nil, 0, fmt.Errorf("hitung diagnosa: %w", err)
+	}
+
+	limit := filter.Limit
+	if limit <= 0 {
+		limit = 10
 	}
 
 	listQuery := `
@@ -47,13 +56,14 @@ func (r *diagnosaRepository) GetDiagnosaTerbanyak(filter ModelsPasien.DiagnosaTe
 		FROM diagnosa_pasien dp
 		INNER JOIN penyakit peny ON dp.kd_penyakit = peny.kd_penyakit
 		INNER JOIN reg_periksa rp ON dp.no_rawat = rp.no_rawat
-	` + dateClause + `
+	` + dateClause + searchClause + `
 		GROUP BY peny.kd_penyakit, peny.nm_penyakit
 		ORDER BY jumlah DESC
 		LIMIT ?
 	`
 
-	rows, err := r.db.Query(listQuery, filter.Limit)
+	listArgs := append(append([]any{}, searchArgs...), limit)
+	rows, err := r.db.Query(listQuery, listArgs...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("diagnosa terbanyak: %w", err)
 	}
@@ -139,4 +149,13 @@ func normalizePeriode(periode string) string {
 
 func round2(v float64) float64 {
 	return float64(int(v*100+0.5)) / 100
+}
+
+func diagnosaSearchClause(cari string) (string, []any) {
+	c := strings.TrimSpace(cari)
+	if c == "" {
+		return "", nil
+	}
+	like := "%" + c + "%"
+	return ` AND (peny.kd_penyakit LIKE ? OR peny.nm_penyakit LIKE ?) `, []any{like, like}
 }
