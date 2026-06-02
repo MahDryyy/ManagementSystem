@@ -3,6 +3,7 @@ import type {
   GrafikGranularity,
   GrafikTitik,
   HistoriResponse,
+  HistoriPengeluaranResponse,
   KeuanganPeriode,
   KeuanganTotalTitik,
   PemasukanKategoriItem,
@@ -54,6 +55,12 @@ export function fetchPemasukanKategori(periode: KeuanganPeriode) {
 export function fetchHistoriKeuangan(limit = 10, offset = 0) {
   return apiGet<HistoriResponse>(
     `/api/dashboard/keuangan/histori${buildQuery({ limit, offset })}`,
+  );
+}
+
+export function fetchHistoriPengeluaran(limit = 10, offset = 0) {
+  return apiGet<HistoriPengeluaranResponse>(
+    `/api/dashboard/keuangan/histori-pengeluaran${buildQuery({ limit, offset })}`,
   );
 }
 

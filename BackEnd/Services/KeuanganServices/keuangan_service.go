@@ -14,6 +14,7 @@ type KeuanganService interface {
 	GetKeuanganTotal(periode string) ([]ModelsKeuangan.KeuanganTotalTitik, error)
 	GetPemasukanPerKategori(periode string) ([]ModelsKeuangan.PemasukanKategoriItem, error)
 	GetHistori(limit, offset int) (ModelsKeuangan.HistoriResponse, error)
+	GetHistoriPengeluaran(limit, offset int) (ModelsKeuangan.HistoriPengeluaranResponse, error)
 	GetRingkasanPendapatanLaborat() (ModelsKeuangan.RingkasanPendapatanLaborat, error)
 	GetGrafikPendapatanLaborat(periode string) ([]ModelsKeuangan.GrafikTitik, error)
 }
@@ -56,6 +57,10 @@ func (s *keuanganService) GetPemasukanPerKategori(periode string) ([]ModelsKeuan
 
 func (s *keuanganService) GetHistori(limit, offset int) (ModelsKeuangan.HistoriResponse, error) {
 	return s.repo.GetHistori(limit, offset)
+}
+
+func (s *keuanganService) GetHistoriPengeluaran(limit, offset int) (ModelsKeuangan.HistoriPengeluaranResponse, error) {
+	return s.repo.GetHistoriPengeluaran(limit, offset)
 }
 
 func (s *keuanganService) GetRingkasanPendapatanLaborat() (ModelsKeuangan.RingkasanPendapatanLaborat, error) {

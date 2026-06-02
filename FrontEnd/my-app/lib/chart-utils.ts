@@ -24,6 +24,22 @@ export function yTicks(max: number, count = 4): number[] {
   return unique;
 }
 
+/** Indeks label sumbu-X yang ditampilkan agar tidak menumpuk saat data banyak. */
+export function visibleLabelIndices(total: number, maxVisible = 10): Set<number> {
+  if (total <= 0) return new Set();
+  if (total <= maxVisible) {
+    return new Set(Array.from({ length: total }, (_, i) => i));
+  }
+  const indices = new Set<number>();
+  indices.add(0);
+  const step = (total - 1) / (maxVisible - 1);
+  for (let i = 1; i < maxVisible - 1; i++) {
+    indices.add(Math.round(i * step));
+  }
+  indices.add(total - 1);
+  return indices;
+}
+
 export function pointCoords(
   values: number[],
   max: number,

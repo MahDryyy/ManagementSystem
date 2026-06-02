@@ -9,6 +9,8 @@ import { Skeleton } from "@/components/ui/Skeleton";
 type HistoriListProps = {
   items: HistoriItem[];
   loading?: boolean;
+  title?: string;
+  emptyLabel?: string;
   onViewAll?: () => void;
 };
 
@@ -27,6 +29,8 @@ function formatDate(iso: string) {
 export default function HistoriList({
   items,
   loading,
+  title = "Histori Transaksi",
+  emptyLabel = "Belum ada transaksi.",
   onViewAll,
 }: HistoriListProps) {
   const listKey = items.map((i) => i.id).join("|");
@@ -35,9 +39,7 @@ export default function HistoriList({
   return (
     <div className="rounded-2xl border border-[#e8eaed] bg-white p-4 shadow-sm sm:p-5">
       <div className="flex items-center justify-between">
-        <h3 className="text-base font-semibold text-zinc-800">
-          Histori Transaksi
-        </h3>
+        <h3 className="text-base font-semibold text-zinc-800">{title}</h3>
         {onViewAll && (
           <button
             type="button"
@@ -59,7 +61,7 @@ export default function HistoriList({
         </ul>
       ) : items.length === 0 ? (
         <p className="mt-6 text-center text-sm text-zinc-400">
-          Belum ada transaksi.
+          {emptyLabel}
         </p>
       ) : (
         <ul className="mt-4 divide-y divide-zinc-100">

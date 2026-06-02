@@ -101,6 +101,17 @@ func (ctrl *KeuanganController) GetHistori(c *gin.Context) {
 	c.JSON(http.StatusOK, data)
 }
 
+func (ctrl *KeuanganController) GetHistoriPengeluaran(c *gin.Context) {
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	data, err := ctrl.svc.GetHistoriPengeluaran(limit, offset)
+	if err != nil {
+		writeKeuanganError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}
+
 func (ctrl *KeuanganController) GetRingkasanPendapatanLaborat(c *gin.Context) {
 	data, err := ctrl.svc.GetRingkasanPendapatanLaborat()
 	if err != nil {

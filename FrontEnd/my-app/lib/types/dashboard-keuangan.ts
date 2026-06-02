@@ -5,7 +5,7 @@ export type KeuanganPeriode =
   | "tahun_ini"
   | "semua";
 
-export type GrafikGranularity = "day" | "week" | "month";
+export type GrafikGranularity = "day" | "week" | "month" | "all";
 
 export type RincianBayar = {
   kategori: string;
@@ -106,6 +106,21 @@ export type HistoriResponse = {
   offset: number;
 };
 
+export type HistoriPengeluaranRow = {
+  no_keluar: string;
+  tanggal: string;
+  kategori: string;
+  keterangan: string;
+  biaya: number;
+};
+
+export type HistoriPengeluaranResponse = {
+  data: HistoriPengeluaranRow[];
+  total: number;
+  limit: number;
+  offset: number;
+};
+
 export const KEUANGAN_PERIODE_OPTIONS: { value: KeuanganPeriode; label: string }[] =
   [
     { value: "hari_ini", label: "Hari ini" },
@@ -119,7 +134,8 @@ export const GRAFIK_GRANULARITY_OPTIONS: {
   value: GrafikGranularity;
   label: string;
 }[] = [
-  { value: "day", label: "day" },
-  { value: "week", label: "week" },
-  { value: "month", label: "month" },
+  { value: "day", label: "Hari" },
+  { value: "week", label: "Minggu" },
+  { value: "month", label: "Bulan" },
+  { value: "all", label: "Semua" },
 ];

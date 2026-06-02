@@ -38,23 +38,21 @@ export default function KeuanganTotalChart({
           </p>
         </div>
         <div className="flex flex-wrap rounded-full bg-zinc-100 p-1 text-xs font-medium">
-          {KEUANGAN_PERIODE_OPTIONS.filter((o) => o.value !== "semua").map(
-            (opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                disabled={loading}
-                onClick={() => onPeriodeChange(opt.value)}
-                className={`rounded-full px-3 py-1.5 transition-all disabled:opacity-60 sm:px-4 ${
-                  periode === opt.value
-                    ? "bg-white text-zinc-900 shadow-sm"
-                    : "text-zinc-500 hover:text-zinc-700"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ),
-          )}
+          {KEUANGAN_PERIODE_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              disabled={loading}
+              onClick={() => onPeriodeChange(opt.value)}
+              className={`rounded-full px-3 py-1.5 transition-all disabled:opacity-60 sm:px-4 ${
+                periode === opt.value
+                  ? "bg-white text-zinc-900 shadow-sm"
+                  : "text-zinc-500 hover:text-zinc-700"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
       </div>
 

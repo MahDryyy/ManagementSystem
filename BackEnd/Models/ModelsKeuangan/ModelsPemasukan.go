@@ -19,6 +19,7 @@ const (
 	GrafikGranularityDay   = "day"
 	GrafikGranularityWeek  = "week"
 	GrafikGranularityMonth = "month"
+	GrafikGranularityAll   = "all"
 )
 
 type PendapatanAkunRow struct {
@@ -129,4 +130,19 @@ type HistoriResponse struct {
 	Total  int           `json:"total"`
 	Limit  int           `json:"limit"`
 	Offset int           `json:"offset"`
+}
+
+type HistoriPengeluaranRow struct {
+	NoKeluar  string  `json:"no_keluar"`
+	Tanggal   string  `json:"tanggal"`
+	Kategori  string  `json:"kategori"`
+	Keterangan string `json:"keterangan"`
+	Biaya     float64 `json:"biaya"`
+}
+
+type HistoriPengeluaranResponse struct {
+	Data   []HistoriPengeluaranRow `json:"data"`
+	Total  int                   `json:"total"`
+	Limit  int                   `json:"limit"`
+	Offset int                   `json:"offset"`
 }

@@ -8,4 +8,4 @@ export type AppRoute =
   | "settings"
   | "help";
 
-export const DEFAULT_ROUTE: AppRoute = "dashboard-pasien";
+export const DEFAULT_ROUTE: AppRoute = "dashboard";

@@ -16,6 +16,7 @@ import {
   nearestIndex,
   niceMax,
   pointCoords,
+  visibleLabelIndices,
   yTicks,
 } from "@/lib/chart-utils";
 import { Skeleton } from "@/components/ui/Skeleton";
@@ -96,13 +97,20 @@ export default function FinanceChart({
   const uid = useId().replace(/:/g, "");
   const svgRef = useRef<SVGSVGElement>(null);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
-  const { W, H, PAD } = chartLayout(height);
+  const { W, H, PAD: basePad } = chartLayout(height);
+  const denseLabels = labels.length > 14;
+  const PAD = {
+    ...basePad,
+    bottom: denseLabels ? Math.round(height * 0.22) : basePad.bottom,
+  };
 
   const allValues = series.flatMap((s) => s.values);
   const maxVal = niceMax(Math.max(...allValues, 0));
   const ticks = yTicks(maxVal);
   const baseY = PAD.top + (H - PAD.top - PAD.bottom);
   const hasData = labels.length > 0 && series.length > 0;
+  const maxXLabels = labels.length > 24 ? 8 : labels.length > 14 ? 10 : labels.length;
+  const shownLabels = visibleLabelIndices(labels.length, maxXLabels);
 
   const chartKey = `${labels.join("|")}-${series.map((s) => `${s.id}:${s.values.join(",")}`).join("|")}`;
   const progress = useAnimateProgress(chartKey, !loading && hasData, 1000);
@@ -290,19 +298,22 @@ export default function FinanceChart({
         })}
 
         {labels.map((label, i) => {
+          if (!shownLabels.has(i)) return null;
           const pts = pointCoords(series[0]?.values ?? [], maxVal, W, H, PAD);
           const x = pts[i]?.x ?? PAD.left;
           const labelProgress = Math.min(
             1,
             Math.max(0, progress * labels.length - i * 0.25),
           );
+          const labelY = H - Math.round(PAD.bottom * 0.35);
           return (
             <text
               key={`${label}-${i}`}
               x={x}
-              y={H - 10}
-              textAnchor="middle"
-              className={`fill-zinc-500 text-[11px] capitalize ${
+              y={labelY}
+              textAnchor={denseLabels ? "end" : "middle"}
+              transform={denseLabels ? `rotate(-42 ${x} ${labelY})` : undefined}
+              className={`fill-zinc-500 text-[10px] capitalize ${
                 hoverIdx === i ? "font-semibold fill-zinc-800" : ""
               }`}
               style={{ opacity: labelProgress }}

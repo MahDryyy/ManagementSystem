@@ -6,6 +6,7 @@ import {
   fetchGrafikPendapatanLaborat,
   fetchGrafikPengeluaran,
   fetchHistoriKeuangan,
+  fetchHistoriPengeluaran,
   fetchKeuanganTotal,
   fetchPemasukanKategori,
   fetchPendapatanAkun,
@@ -16,6 +17,7 @@ import type {
   GrafikGranularity,
   GrafikTitik,
   HistoriItem,
+  HistoriPengeluaranRow,
   KeuanganPeriode,
   KeuanganTotalTitik,
   PemasukanKategoriItem,
@@ -25,6 +27,7 @@ import type {
   TotalPerAkun,
 } from "@/lib/types/dashboard-keuangan";
 import HistoriList from "@/components/dashboard-keuangan/HistoriList";
+import HistoriPengeluaranTable from "@/components/dashboard-keuangan/HistoriPengeluaranTable";
 import KeuanganTotalChart from "@/components/dashboard-keuangan/KeuanganTotalChart";
 import LineChartCard from "@/components/dashboard-keuangan/LineChartCard";
 import PemasukanDonut from "@/components/dashboard-keuangan/PemasukanDonut";
@@ -71,6 +74,13 @@ export default function DashboardKeuangan() {
 
   const [kategori, setKategori] = useState<PemasukanKategoriItem[]>([]);
   const [histori, setHistori] = useState<HistoriItem[]>([]);
+  const [historiPengeluaran, setHistoriPengeluaran] = useState<HistoriItem[]>([]);
+  const [pengeluaranRows, setPengeluaranRows] = useState<HistoriPengeluaranRow[]>([]);
+  const [pengeluaranTotal, setPengeluaranTotal] = useState(0);
+  const [pengeluaranLoading, setPengeluaranLoading] = useState(false);
+  const [pengeluaranLoadingMore, setPengeluaranLoadingMore] = useState(false);
+  const [showFullPengeluaran, setShowFullPengeluaran] = useState(false);
+  const pengeluaranRef = useRef<HTMLDivElement>(null);
 
   const [rows, setRows] = useState<PendapatanAkunRow[]>([]);
   const [rowsTotal, setRowsTotal] = useState(0);
@@ -94,6 +104,23 @@ export default function DashboardKeuangan() {
   }, [showFullTable]);
 
   useEffect(() => {
+    if (showFullPengeluaran && pengeluaranRef.current) {
+      pengeluaranRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [showFullPengeluaran]);
+
+  function mapHistoriPengeluaran(rows: HistoriPengeluaranRow[]): HistoriItem[] {
+    return rows.map((r) => ({
+      id: r.no_keluar,
+      judul: r.keterangan?.trim() || r.kategori || "Pengeluaran",
+      tanggal: r.tanggal,
+      jenis: "pengeluaran" as const,
+      nominal: r.biaya,
+      kategori: r.kategori,
+    }));
+  }
+
+  useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 350);
     return () => clearTimeout(t);
   }, [search]);
@@ -102,14 +129,16 @@ export default function DashboardKeuangan() {
     setLoading(true);
     setError(null);
     try {
-      const [ring, kat, hist] = await Promise.all([
+      const [ring, kat, hist, histPeng] = await Promise.all([
         fetchRingkasanKeuangan(),
         fetchPemasukanKategori("bulan_ini"),
         fetchHistoriKeuangan(8, 0),
+        fetchHistoriPengeluaran(8, 0),
       ]);
       setRingkasan(ring);
       setKategori(kat);
       setHistori(hist.data ?? []);
+      setHistoriPengeluaran(mapHistoriPengeluaran(histPeng.data ?? []));
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "Gagal memuat dashboard keuangan harap restart aplikasi",
@@ -223,6 +252,29 @@ export default function DashboardKeuangan() {
     [],
   );
 
+  const loadHistoriPengeluaranTable = useCallback(
+    async (offset = 0, append = false) => {
+      if (append) setPengeluaranLoadingMore(true);
+      else setPengeluaranLoading(true);
+      try {
+        const res = await fetchHistoriPengeluaran(TABLE_PAGE, offset);
+        setPengeluaranTotal(res.total);
+        setPengeluaranRows((prev) =>
+          append ? [...prev, ...(res.data ?? [])] : (res.data ?? []),
+        );
+      } catch {
+        if (!append) {
+          setPengeluaranRows([]);
+          setPengeluaranTotal(0);
+        }
+      } finally {
+        setPengeluaranLoading(false);
+        setPengeluaranLoadingMore(false);
+      }
+    },
+    [],
+  );
+
   useEffect(() => {
     loadOverview();
     loadGrafik("day");
@@ -230,7 +282,16 @@ export default function DashboardKeuangan() {
     loadRingkasanLaborat();
     loadRincianLaborat("bulan_ini");
     loadTable("", "bulan_ini", "", 0, false);
-  }, [loadOverview, loadGrafik, loadKeuanganTotal, loadRingkasanLaborat, loadRincianLaborat, loadTable]);
+    loadHistoriPengeluaranTable(0, false);
+  }, [
+    loadOverview,
+    loadGrafik,
+    loadKeuanganTotal,
+    loadRingkasanLaborat,
+    loadRincianLaborat,
+    loadTable,
+    loadHistoriPengeluaranTable,
+  ]);
 
   useEffect(() => {
     loadGrafik(grafikGranularity);
@@ -249,6 +310,7 @@ export default function DashboardKeuangan() {
   }, [debouncedSearch, periode, filterJenis, loadTable]);
 
   const hasMore = rows.length < rowsTotal;
+  const hasMorePengeluaran = pengeluaranRows.length < pengeluaranTotal;
 
   if (error && !loading && rows.length === 0) {
     return (
@@ -289,7 +351,6 @@ export default function DashboardKeuangan() {
             granularity={grafikGranularity}
             onGranularityChange={setGrafikGranularity}
             loading={grafikLoading || loading}
-            subtitle="Data pengeluaran menyusul"
           />
         </FadeIn>
         <FadeIn delayMs={160}>
@@ -333,14 +394,41 @@ export default function DashboardKeuangan() {
             loading={loading}
           />
         </FadeIn>
-        <FadeIn delayMs={400}>
+        <FadeIn delayMs={360}>
           <HistoriList
+            title="Histori Pemasukan"
             items={histori}
             loading={loading}
+            emptyLabel="Belum ada pemasukan."
             onViewAll={() => setShowFullTable(true)}
           />
         </FadeIn>
       </div>
+
+      <FadeIn delayMs={400} className="mt-4">
+        <HistoriList
+          title="Histori Pengeluaran"
+          items={historiPengeluaran}
+          loading={loading}
+          emptyLabel="Belum ada pengeluaran."
+          onViewAll={() => setShowFullPengeluaran(true)}
+        />
+      </FadeIn>
+
+      <FadeIn delayMs={440} className="mt-4">
+        <div ref={pengeluaranRef}>
+          <HistoriPengeluaranTable
+            rows={pengeluaranRows}
+            total={pengeluaranTotal}
+            loading={pengeluaranLoading && pengeluaranRows.length === 0}
+            loadingMore={pengeluaranLoadingMore}
+            hasMore={hasMorePengeluaran}
+            onLoadMore={() =>
+              loadHistoriPengeluaranTable(pengeluaranRows.length, true)
+            }
+          />
+        </div>
+      </FadeIn>
 
       <FadeIn delayMs={480} className="mt-6">
         <div ref={tableRef}>

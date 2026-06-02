@@ -19,6 +19,7 @@ type KeuanganRepository interface {
 	GetKeuanganTotal(periode string) ([]ModelsKeuangan.KeuanganTotalTitik, error)
 	GetPemasukanPerKategori(periode string) ([]ModelsKeuangan.PemasukanKategoriItem, error)
 	GetHistori(limit, offset int) (ModelsKeuangan.HistoriResponse, error)
+	GetHistoriPengeluaran(limit, offset int) (ModelsKeuangan.HistoriPengeluaranResponse, error)
 	GetRingkasanPendapatanLaborat() (ModelsKeuangan.RingkasanPendapatanLaborat, error)
 	GetGrafikPendapatanLaborat(periode string) ([]ModelsKeuangan.GrafikTitik, error)
 }
@@ -33,6 +34,8 @@ func NewKeuanganRepository(db *sql.DB) KeuanganRepository {
 
 // Filter tanggal valid di sumber (index-friendly pada rp.tgl_registrasi).
 const tglRegValid = `rp.tgl_registrasi IS NOT NULL AND rp.tgl_registrasi <> '0000-00-00'`
+
+const tglPengeluaranValid = `ph.tanggal IS NOT NULL AND ph.tanggal <> '0000-00-00 00:00:00'`
 
 // Batas bawah scan untuk ringkasan harian/mingguan/bulanan dalam satu pass.
 const ringkasanMinDate = `LEAST(
@@ -509,21 +512,69 @@ func grafikGrouping(granularity string) (whereClause, labelExpr, groupByExpr, or
 			`YEAR(tanggal), MONTH(tanggal)`,
 			`MIN(tanggal)`,
 			nil
+	case ModelsKeuangan.GrafikGranularityAll:
+		return `1=1`,
+			`DATE_FORMAT(MIN(tanggal), '%b %Y')`,
+			`YEAR(tanggal), MONTH(tanggal)`,
+			`MIN(tanggal)`,
+			nil
 	default:
 		return "", "", "", "", fmt.Errorf("granularity tidak valid: %s", granularity)
 	}
 }
 
 func (r *keuanganRepository) GetGrafikPengeluaran(granularity string) ([]ModelsKeuangan.GrafikTitik, error) {
-	pem, err := r.GetGrafikPemasukan(granularity)
+	whereClause, labelExpr, groupByExpr, orderExpr, err := grafikPengeluaranGrouping(granularity)
 	if err != nil {
 		return nil, err
 	}
-	out := make([]ModelsKeuangan.GrafikTitik, len(pem))
-	for i, p := range pem {
-		out[i] = ModelsKeuangan.GrafikTitik{Label: p.Label, Nilai: 0}
+
+	query := fmt.Sprintf(`
+		SELECT %s AS label, COALESCE(SUM(ph.biaya), 0) AS nilai
+		FROM pengeluaran_harian ph
+		WHERE %s AND %s
+		GROUP BY %s
+		ORDER BY %s`,
+		labelExpr, tglPengeluaranValid, whereClause, groupByExpr, orderExpr)
+
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("grafik pengeluaran: %w", err)
 	}
-	return out, nil
+	defer rows.Close()
+
+	return scanGrafikTitik(rows)
+}
+
+func grafikPengeluaranGrouping(granularity string) (whereClause, labelExpr, groupByExpr, orderExpr string, err error) {
+	switch granularity {
+	case ModelsKeuangan.GrafikGranularityDay:
+		return `DATE(ph.tanggal) >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)`,
+			`DATE_FORMAT(DATE(ph.tanggal), '%d/%m/%Y')`,
+			`DATE(ph.tanggal)`,
+			`DATE(ph.tanggal)`,
+			nil
+	case ModelsKeuangan.GrafikGranularityWeek:
+		return `DATE(ph.tanggal) >= DATE_SUB(CURDATE(), INTERVAL 6 WEEK)`,
+			`DATE_FORMAT(MIN(ph.tanggal), '%d/%m/%Y')`,
+			`YEARWEEK(ph.tanggal, 1)`,
+			`MIN(ph.tanggal)`,
+			nil
+	case ModelsKeuangan.GrafikGranularityMonth:
+		return `DATE(ph.tanggal) >= DATE_SUB(CURDATE(), INTERVAL 5 MONTH)`,
+			`DATE_FORMAT(MIN(ph.tanggal), '%b %Y')`,
+			`YEAR(ph.tanggal), MONTH(ph.tanggal)`,
+			`MIN(ph.tanggal)`,
+			nil
+	case ModelsKeuangan.GrafikGranularityAll:
+		return `1=1`,
+			`DATE_FORMAT(MIN(ph.tanggal), '%b %Y')`,
+			`YEAR(ph.tanggal), MONTH(ph.tanggal)`,
+			`MIN(ph.tanggal)`,
+			nil
+	default:
+		return "", "", "", "", fmt.Errorf("granularity tidak valid: %s", granularity)
+	}
 }
 
 func (r *keuanganRepository) GetKeuanganTotal(periode string) ([]ModelsKeuangan.KeuanganTotalTitik, error) {
@@ -532,7 +583,7 @@ func (r *keuanganRepository) GetKeuanganTotal(periode string) ([]ModelsKeuangan.
 		return nil, err
 	}
 
-	groupExpr, _, orderExpr, err := keuanganTotalGrouping(resolved)
+	groupExpr, dataWhere, orderExpr, err := keuanganTotalGrouping(resolved)
 	if err != nil {
 		return nil, err
 	}
@@ -541,8 +592,12 @@ func (r *keuanganRepository) GetKeuanganTotal(periode string) ([]ModelsKeuangan.
 	if err != nil {
 		return nil, err
 	}
+	phWhere, err := pengeluaranDateWhere(resolved)
+	if err != nil {
+		return nil, err
+	}
 
-	query := fmt.Sprintf(`
+	pemQuery := fmt.Sprintf(`
 		SELECT %s AS label, COALESCE(SUM(total), 0) AS nilai
 		FROM (
 			SELECT rp.tgl_registrasi AS tanggal, dnj.besar_bayar AS total
@@ -555,32 +610,77 @@ func (r *keuanganRepository) GetKeuanganTotal(periode string) ([]ModelsKeuangan.
 			INNER JOIN reg_periksa rp ON dni.no_rawat = rp.no_rawat
 			WHERE %s AND %s
 		) pendapatan
+		WHERE %s
 		GROUP BY label
-		ORDER BY %s`, groupExpr, tglRegValid, rpWhere, tglRegValid, rpWhere, orderExpr)
+		ORDER BY %s`, groupExpr, tglRegValid, rpWhere, tglRegValid, rpWhere, dataWhere, orderExpr)
 
+	pengQuery := fmt.Sprintf(`
+		SELECT %s AS label, COALESCE(SUM(total), 0) AS nilai
+		FROM (
+			SELECT ph.tanggal AS tanggal, ph.biaya AS total
+			FROM pengeluaran_harian ph
+			WHERE %s AND %s
+		) pengeluaran
+		WHERE %s
+		GROUP BY label
+		ORDER BY %s`, groupExpr, tglPengeluaranValid, phWhere, dataWhere, orderExpr)
+
+	pemSeries, err := r.scanGrafikTitikFromQuery(pemQuery)
+	if err != nil {
+		return nil, fmt.Errorf("keuangan total pemasukan: %w", err)
+	}
+	pengSeries, err := r.scanGrafikTitikFromQuery(pengQuery)
+	if err != nil {
+		return nil, fmt.Errorf("keuangan total pengeluaran: %w", err)
+	}
+
+	return mergeKeuanganTotal(pemSeries, pengSeries), nil
+}
+
+func (r *keuanganRepository) scanGrafikTitikFromQuery(query string) ([]ModelsKeuangan.GrafikTitik, error) {
 	rows, err := r.db.Query(query)
 	if err != nil {
-		return nil, fmt.Errorf("keuangan total: %w", err)
+		return nil, err
 	}
 	defer rows.Close()
+	return scanGrafikTitik(rows)
+}
 
-	var items []ModelsKeuangan.KeuanganTotalTitik
-	for rows.Next() {
-		var label string
-		var nilai float64
-		if err := rows.Scan(&label, &nilai); err != nil {
-			return nil, err
+func mergeKeuanganTotal(pem, peng []ModelsKeuangan.GrafikTitik) []ModelsKeuangan.KeuanganTotalTitik {
+	pemMap := make(map[string]float64, len(pem))
+	pengMap := make(map[string]float64, len(peng))
+	var order []string
+	seen := make(map[string]struct{})
+
+	addLabel := func(label string) {
+		if _, ok := seen[label]; ok {
+			return
 		}
+		seen[label] = struct{}{}
+		order = append(order, label)
+	}
+
+	for _, p := range pem {
+		pemMap[p.Label] = p.Nilai
+		addLabel(p.Label)
+	}
+	for _, p := range peng {
+		pengMap[p.Label] = p.Nilai
+		addLabel(p.Label)
+	}
+
+	items := make([]ModelsKeuangan.KeuanganTotalTitik, 0, len(order))
+	for _, label := range order {
 		items = append(items, ModelsKeuangan.KeuanganTotalTitik{
 			Label:       label,
-			Pemasukan:   nilai,
-			Pengeluaran: 0,
+			Pemasukan:   pemMap[label],
+			Pengeluaran: pengMap[label],
 		})
 	}
 	if items == nil {
 		items = []ModelsKeuangan.KeuanganTotalTitik{}
 	}
-	return items, rows.Err()
+	return items
 }
 
 func keuanganTotalRegWhere(periode string) (string, error) {
@@ -593,12 +693,14 @@ func keuanganTotalRegWhere(periode string) (string, error) {
 		return `rp.tgl_registrasi >= DATE_FORMAT(CURDATE(), '%Y-%m-01') AND rp.tgl_registrasi <= CURDATE()`, nil
 	case ModelsKeuangan.PeriodeTahunIni:
 		return `rp.tgl_registrasi >= DATE_FORMAT(CURDATE(), '%Y-01-01') AND rp.tgl_registrasi <= CURDATE()`, nil
+	case ModelsKeuangan.PeriodeSemuaWaktu:
+		return `1=1`, nil
 	default:
 		return "", fmt.Errorf("periode tidak valid: %s", periode)
 	}
 }
 
-func keuanganTotalGrouping(periode string) (groupExpr, whereClause, orderExpr string, err error) {
+func keuanganTotalGrouping(periode string) (groupExpr, dataWhere, orderExpr string, err error) {
 	switch periode {
 	case ModelsKeuangan.PeriodeHariIni:
 		return `CONCAT(LPAD(HOUR(tanggal), 2, '0'), ':00')`,
@@ -619,6 +721,11 @@ func keuanganTotalGrouping(periode string) (groupExpr, whereClause, orderExpr st
 		return `DATE_FORMAT(tanggal, '%b')`,
 			`YEAR(tanggal) = YEAR(CURDATE())`,
 			`MIN(tanggal)`,
+			nil
+	case ModelsKeuangan.PeriodeSemuaWaktu:
+		return `DATE_FORMAT(tanggal, '%b %Y')`,
+			`1=1`,
+			`MIN(DATE_FORMAT(tanggal, '%Y-%m-01'))`,
 			nil
 	default:
 		return "", "", "", fmt.Errorf("periode tidak valid: %s", periode)
@@ -729,6 +836,74 @@ func (r *keuanganRepository) GetHistori(limit, offset int) (ModelsKeuangan.Histo
 
 	resp.Data = pageHistori(mergeHistori(jalanRows, inapRows), limit, offset)
 	return resp, nil
+}
+
+func (r *keuanganRepository) GetHistoriPengeluaran(limit, offset int) (ModelsKeuangan.HistoriPengeluaranResponse, error) {
+	var resp ModelsKeuangan.HistoriPengeluaranResponse
+	if limit <= 0 {
+		limit = 10
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	resp.Limit = limit
+	resp.Offset = offset
+
+	countQuery := fmt.Sprintf(`
+		SELECT COUNT(*)
+		FROM pengeluaran_harian ph
+		WHERE %s`, tglPengeluaranValid)
+	if err := r.db.QueryRow(countQuery).Scan(&resp.Total); err != nil {
+		return resp, fmt.Errorf("hitung histori pengeluaran: %w", err)
+	}
+
+	listQuery := fmt.Sprintf(`
+		SELECT
+			ph.no_keluar,
+			IFNULL(DATE_FORMAT(ph.tanggal, '%%Y-%%m-%%d'), '') AS tanggal,
+			COALESCE(NULLIF(k.nama_kategori, ''), ph.kode_kategori, '-') AS kategori,
+			ph.keterangan,
+			ph.biaya
+		FROM pengeluaran_harian ph
+		LEFT JOIN kategori_pengeluaran_harian k ON ph.kode_kategori = k.kode_kategori
+		WHERE %s
+		ORDER BY ph.tanggal DESC, ph.no_keluar DESC
+		LIMIT ? OFFSET ?`, tglPengeluaranValid)
+
+	rows, err := r.db.Query(listQuery, limit, offset)
+	if err != nil {
+		return resp, fmt.Errorf("histori pengeluaran: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var row ModelsKeuangan.HistoriPengeluaranRow
+		if err := rows.Scan(&row.NoKeluar, &row.Tanggal, &row.Kategori, &row.Keterangan, &row.Biaya); err != nil {
+			return resp, err
+		}
+		resp.Data = append(resp.Data, row)
+	}
+	if resp.Data == nil {
+		resp.Data = []ModelsKeuangan.HistoriPengeluaranRow{}
+	}
+	return resp, rows.Err()
+}
+
+func pengeluaranDateWhere(periode string) (string, error) {
+	switch periode {
+	case ModelsKeuangan.PeriodeHariIni:
+		return `DATE(ph.tanggal) = CURDATE()`, nil
+	case ModelsKeuangan.PeriodeMingguIni:
+		return `YEARWEEK(ph.tanggal, 1) = YEARWEEK(CURDATE(), 1)`, nil
+	case ModelsKeuangan.PeriodeBulanIni:
+		return `YEAR(ph.tanggal) = YEAR(CURDATE()) AND MONTH(ph.tanggal) = MONTH(CURDATE())`, nil
+	case ModelsKeuangan.PeriodeTahunIni:
+		return `YEAR(ph.tanggal) = YEAR(CURDATE())`, nil
+	case ModelsKeuangan.PeriodeSemuaWaktu:
+		return `1=1`, nil
+	default:
+		return "", fmt.Errorf("periode tidak valid: %s", periode)
+	}
 }
 
 func (r *keuanganRepository) fetchHistoriBranch(detailTable, notaTable, jenisRawat string, fetchLimit int) ([]historiCandidate, error) {
