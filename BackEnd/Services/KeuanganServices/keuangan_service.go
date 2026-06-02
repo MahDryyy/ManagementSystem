@@ -7,6 +7,7 @@ import (
 
 type KeuanganService interface {
 	GetPendapatanPerAkun(filter ModelsKeuangan.PendapatanAkunFilter) (ModelsKeuangan.PendapatanAkunResponse, error)
+	GetStrukByNoRawat(noRawat string) (ModelsKeuangan.StrukResponse, error)
 	GetRingkasanPemasukan() (ModelsKeuangan.RingkasanPemasukan, error)
 	GetGrafikPemasukan(granularity string) ([]ModelsKeuangan.GrafikTitik, error)
 	GetGrafikPengeluaran(granularity string) ([]ModelsKeuangan.GrafikTitik, error)
@@ -27,6 +28,10 @@ func NewKeuanganService(repo repositories.KeuanganRepository) KeuanganService {
 
 func (s *keuanganService) GetPendapatanPerAkun(filter ModelsKeuangan.PendapatanAkunFilter) (ModelsKeuangan.PendapatanAkunResponse, error) {
 	return s.repo.GetPendapatanPerAkun(filter)
+}
+
+func (s *keuanganService) GetStrukByNoRawat(noRawat string) (ModelsKeuangan.StrukResponse, error) {
+	return s.repo.GetStrukByNoRawat(noRawat)
 }
 
 func (s *keuanganService) GetRingkasanPemasukan() (ModelsKeuangan.RingkasanPemasukan, error) {

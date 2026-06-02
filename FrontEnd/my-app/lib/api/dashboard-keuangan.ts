@@ -9,6 +9,7 @@ import type {
   PendapatanAkunResponse,
   RingkasanPemasukan,
   RingkasanPendapatanLaborat,
+  StrukResponse,
 } from "@/lib/types/dashboard-keuangan";
 
 export type PendapatanAkunParams = {
@@ -67,6 +68,14 @@ export function fetchPendapatanAkun(params?: PendapatanAkunParams) {
       tanggal_sampai: params?.tanggal_sampai,
       limit: params?.limit ?? 20,
       offset: params?.offset ?? 0,
+    })}`,
+  );
+}
+
+export function fetchStrukKeuangan(noRawat: string) {
+  return apiGet<StrukResponse>(
+    `/api/dashboard/keuangan/pendapatan-akun/struk${buildQuery({
+      no_rawat: noRawat,
     })}`,
   );
 }

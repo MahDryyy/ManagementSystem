@@ -28,6 +28,19 @@ func (ctrl *KeuanganController) GetPendapatanAkun(c *gin.Context) {
 	c.JSON(http.StatusOK, data)
 }
 
+func (ctrl *KeuanganController) GetStrukByNoRawat(c *gin.Context) {
+	noRawat := strings.TrimSpace(c.Param("no_rawat"))
+	if noRawat == "" {
+		noRawat = strings.TrimSpace(c.Query("no_rawat"))
+	}
+	data, err := ctrl.svc.GetStrukByNoRawat(noRawat)
+	if err != nil {
+		writeKeuanganError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}
+
 func (ctrl *KeuanganController) GetRingkasan(c *gin.Context) {
 	data, err := ctrl.svc.GetRingkasanPemasukan()
 	if err != nil {

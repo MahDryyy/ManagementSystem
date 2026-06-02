@@ -30,6 +30,7 @@ import LineChartCard from "@/components/dashboard-keuangan/LineChartCard";
 import PemasukanDonut from "@/components/dashboard-keuangan/PemasukanDonut";
 import PendapatanLaboratPanel from "@/components/dashboard-keuangan/PendapatanLaboratPanel";
 import PendapatanTable from "@/components/dashboard-keuangan/PendapatanTable";
+import StrukDrawer from "@/components/dashboard-keuangan/StrukDrawer";
 import FadeIn from "@/components/ui/FadeIn";
 
 const TABLE_PAGE = 20;
@@ -84,6 +85,7 @@ export default function DashboardKeuangan() {
   const [tableError, setTableError] = useState<string | null>(null);
   const [showFullTable, setShowFullTable] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
+  const [strukNoRawat, setStrukNoRawat] = useState<string | null>(null);
 
   useEffect(() => {
     if (showFullTable && tableRef.current) {
@@ -370,9 +372,12 @@ export default function DashboardKeuangan() {
             onPeriodeChange={setPeriode}
             filterJenis={filterJenis}
             onFilterJenisChange={setFilterJenis}
+            onRowClick={(row) => setStrukNoRawat(row.no_rawat)}
           />
         </div>
       </FadeIn>
+
+      <StrukDrawer noRawat={strukNoRawat} onClose={() => setStrukNoRawat(null)} />
     </div>
   );
 }

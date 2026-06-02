@@ -7,6 +7,32 @@ export type KeuanganPeriode =
 
 export type GrafikGranularity = "day" | "week" | "month";
 
+export type RincianBayar = {
+  kategori: string;
+  total: number;
+};
+
+export type StrukItem = {
+  noindex: number;
+  tanggal: string;
+  nama: string;
+  jumlah: number;
+  biaya: number;
+  total_biaya: number;
+  status: string;
+};
+
+export type StrukResponse = {
+  no_rawat: string;
+  nama_pasien: string;
+  no_rkm_medis: string;
+  cara_bayar: string;
+  tanggal: string;
+  items: StrukItem[];
+  subtotal: RincianBayar[];
+  grand_total: number;
+};
+
 export type PendapatanAkunRow = {
   tanggal: string;
   no_rawat: string;
@@ -16,6 +42,7 @@ export type PendapatanAkunRow = {
   akun_rekening: string;
   total: number;
   jenis_rawat: "ralan" | "ranap";
+  rincian?: RincianBayar[];
 };
 
 export type TotalPerAkun = {

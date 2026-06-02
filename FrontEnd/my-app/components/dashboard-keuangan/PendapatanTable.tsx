@@ -26,6 +26,7 @@ type PendapatanTableProps = {
   onPeriodeChange: (p: KeuanganPeriode) => void;
   filterJenis: "" | "ralan" | "ranap";
   onFilterJenisChange: (v: "" | "ralan" | "ranap") => void;
+  onRowClick?: (row: PendapatanAkunRow) => void;
 };
 
 function formatDate(iso: string) {
@@ -60,6 +61,7 @@ export default function PendapatanTable({
   onPeriodeChange,
   filterJenis,
   onFilterJenisChange,
+  onRowClick,
 }: PendapatanTableProps) {
   return (
     <div className="rounded-2xl border border-[#e8eaed] bg-white p-4 shadow-sm sm:p-5">
@@ -133,6 +135,7 @@ export default function PendapatanTable({
               <th className="pb-3 pr-3 font-medium">Nama Pasien</th>
               <th className="pb-3 pr-3 font-medium">Cara Bayar</th>
               <th className="pb-3 pr-3 font-medium">Akun Rekening</th>
+              <th className="pb-3 pr-3 font-medium">Rincian</th>
               <th className="pb-3 text-right font-medium">Jumlah</th>
             </tr>
           </thead>
@@ -140,14 +143,14 @@ export default function PendapatanTable({
             {loading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={`skel-${i}`}>
-                  <td colSpan={7} className="py-2">
+                  <td colSpan={8} className="py-2">
                     <Skeleton className="h-10 w-full rounded-lg" />
                   </td>
                 </tr>
               ))
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-8 text-center text-zinc-400">
+                <td colSpan={8} className="py-8 text-center text-zinc-400">
                   Tidak ada data pendapatan.
                 </td>
               </tr>
@@ -156,6 +159,8 @@ export default function PendapatanTable({
                 <AnimatedTableRow
                   key={`${row.no_rawat}-${row.no_nota}-${row.akun_rekening}-${idx}`}
                   delayMs={idx * 35}
+                  className={onRowClick ? "cursor-pointer hover:bg-zinc-50" : undefined}
+                  onClick={() => onRowClick?.(row)}
                 >
                   <td className="py-3 pr-3 text-zinc-500">{idx + 1}</td>
                   <td className="py-3 pr-3 text-zinc-700">
@@ -175,6 +180,28 @@ export default function PendapatanTable({
                   </td>
                   <td className="py-3 pr-3 text-zinc-600">{row.cara_bayar}</td>
                   <td className="py-3 pr-3 text-zinc-600">{row.akun_rekening}</td>
+                  <td className="py-3 pr-3">
+                    {row.rincian && row.rincian.length > 0 ? (
+                      <div className="flex max-w-[320px] flex-wrap gap-1">
+                        {row.rincian.slice(0, 6).map((r) => (
+                          <span
+                            key={r.kategori}
+                            className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] text-zinc-700"
+                            title={`${r.kategori} · ${formatRupiah(r.total, true)}`}
+                          >
+                            {r.kategori}
+                          </span>
+                        ))}
+                        {row.rincian.length > 6 && (
+                          <span className="rounded-full bg-zinc-50 px-2 py-0.5 text-[11px] text-zinc-500">
+                            +{row.rincian.length - 6}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-zinc-400">-</span>
+                    )}
+                  </td>
                   <td className="py-3 text-right font-semibold tabular-nums text-emerald-700">
                     {formatRupiah(row.total)}
                   </td>

@@ -30,6 +30,33 @@ type PendapatanAkunRow struct {
 	AkunRekening string    `json:"akun_rekening"`
 	Total        float64   `json:"total"`
 	JenisRawat   string    `json:"jenis_rawat"`
+	Rincian      []RincianBayar `json:"rincian,omitempty"`
+}
+
+type RincianBayar struct {
+	Kategori string  `json:"kategori"`
+	Total    float64 `json:"total"`
+}
+
+type StrukItem struct {
+	NoIndex    int     `json:"noindex"`
+	Tanggal    string  `json:"tanggal"`
+	Nama       string  `json:"nama"`
+	Jumlah     float64 `json:"jumlah"`
+	Biaya      float64 `json:"biaya"`
+	TotalBiaya float64 `json:"total_biaya"`
+	Status     string  `json:"status"`
+}
+
+type StrukResponse struct {
+	NoRawat      string        `json:"no_rawat"`
+	NamaPasien   string        `json:"nama_pasien"`
+	NoRkmMedis   string        `json:"no_rkm_medis"`
+	CaraBayar    string        `json:"cara_bayar"`
+	Tanggal      string        `json:"tanggal"`
+	Items        []StrukItem   `json:"items"`
+	Subtotal     []RincianBayar `json:"subtotal"`
+	GrandTotal   float64       `json:"grand_total"`
 }
 
 type PendapatanAkunFilter struct {

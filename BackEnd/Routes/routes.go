@@ -65,6 +65,8 @@ func Setup(
 			keuangan.GET("/pemasukan-kategori", keuanganCtrl.GetPemasukanKategori)
 			keuangan.GET("/histori", keuanganCtrl.GetHistori)
 			keuangan.GET("/pendapatan-akun", keuanganCtrl.GetPendapatanAkun)
+			keuangan.GET("/pendapatan-akun/:no_rawat/struk", keuanganCtrl.GetStrukByNoRawat)
+			keuangan.GET("/pendapatan-akun/struk", keuanganCtrl.GetStrukByNoRawat)
 			keuangan.GET("/ringkasan-pendapatan-laborat", keuanganCtrl.GetRingkasanPendapatanLaborat)
 			keuangan.GET("/grafik-pendapatan-laborat", keuanganCtrl.GetGrafikPendapatanLaborat)
 		}

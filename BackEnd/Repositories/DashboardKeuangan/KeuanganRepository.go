@@ -12,6 +12,7 @@ import (
 
 type KeuanganRepository interface {
 	GetPendapatanPerAkun(filter ModelsKeuangan.PendapatanAkunFilter) (ModelsKeuangan.PendapatanAkunResponse, error)
+	GetStrukByNoRawat(noRawat string) (ModelsKeuangan.StrukResponse, error)
 	GetRingkasanPemasukan() (ModelsKeuangan.RingkasanPemasukan, error)
 	GetGrafikPemasukan(granularity string) ([]ModelsKeuangan.GrafikTitik, error)
 	GetGrafikPengeluaran(granularity string) ([]ModelsKeuangan.GrafikTitik, error)
@@ -76,6 +77,9 @@ func (r *keuanganRepository) GetPendapatanPerAkun(filter ModelsKeuangan.Pendapat
 	if err != nil {
 		return resp, err
 	}
+	if err := r.attachBillingRincian(rows); err != nil {
+		return resp, err
+	}
 	resp.Data = rows
 
 	perAkunParts, perAkunArgs := buildLiteUnionParts(useJalan, useInap, where, args, needPasien, needPenjab, needNota, "d.nama_bayar AS akun_rekening, d.besar_bayar AS total")
@@ -96,6 +100,174 @@ func (r *keuanganRepository) GetPendapatanPerAkun(filter ModelsKeuangan.Pendapat
 		}
 		resp.PerAkun = append(resp.PerAkun, item)
 	}
+	return resp, nil
+}
+
+func (r *keuanganRepository) attachBillingRincian(rows []ModelsKeuangan.PendapatanAkunRow) error {
+	if len(rows) == 0 {
+		return nil
+	}
+
+	seen := make(map[string]struct{}, len(rows))
+	noRawat := make([]any, 0, len(rows))
+	for _, row := range rows {
+		if row.NoRawat == "" {
+			continue
+		}
+		if _, ok := seen[row.NoRawat]; ok {
+			continue
+		}
+		seen[row.NoRawat] = struct{}{}
+		noRawat = append(noRawat, row.NoRawat)
+	}
+	if len(noRawat) == 0 {
+		return nil
+	}
+
+	ph := strings.TrimRight(strings.Repeat("?,", len(noRawat)), ",")
+	query := fmt.Sprintf(`
+		SELECT b.no_rawat, b.status, COALESCE(SUM(b.totalbiaya), 0) AS total
+		FROM billing b
+		WHERE b.no_rawat IN (%s)
+			AND b.status IS NOT NULL
+			AND b.status <> '-'
+			AND b.status NOT LIKE 'Ttl%%'
+		GROUP BY b.no_rawat, b.status
+	`, ph)
+	qRows, err := r.db.Query(query, noRawat...)
+	if err != nil {
+		return fmt.Errorf("ambil rincian billing: %w", err)
+	}
+	defer qRows.Close()
+
+	perRawat := make(map[string][]ModelsKeuangan.RincianBayar, len(seen))
+	for qRows.Next() {
+		var nr, status string
+		var total float64
+		if err := qRows.Scan(&nr, &status, &total); err != nil {
+			return err
+		}
+		if status == "" || status == "-" {
+			continue
+		}
+		if total == 0 {
+			continue
+		}
+		perRawat[nr] = append(perRawat[nr], ModelsKeuangan.RincianBayar{
+			Kategori: status,
+			Total:    total,
+		})
+	}
+	if err := qRows.Err(); err != nil {
+		return err
+	}
+
+	for i := range rows {
+		rincian := perRawat[rows[i].NoRawat]
+		if len(rincian) == 0 {
+			continue
+		}
+		sort.Slice(rincian, func(a, b int) bool {
+			if rincian[a].Total != rincian[b].Total {
+				return rincian[a].Total > rincian[b].Total
+			}
+			return rincian[a].Kategori < rincian[b].Kategori
+		})
+		rows[i].Rincian = rincian
+	}
+	return nil
+}
+
+func (r *keuanganRepository) GetStrukByNoRawat(noRawat string) (ModelsKeuangan.StrukResponse, error) {
+	var resp ModelsKeuangan.StrukResponse
+	resp.NoRawat = noRawat
+
+	if strings.TrimSpace(noRawat) == "" {
+		return resp, fmt.Errorf("no_rawat tidak valid")
+	}
+
+	// Header transaksi + pasien.
+	headerQ := `
+		SELECT
+			rp.no_rawat,
+			IFNULL(p.nm_pasien,'') AS nm_pasien,
+			IFNULL(p.no_rkm_medis,'') AS no_rkm_medis,
+			IFNULL(pj.png_jawab,'') AS cara_bayar,
+			IFNULL(DATE_FORMAT(rp.tgl_registrasi,'%Y-%m-%d'),'') AS tanggal
+		FROM reg_periksa rp
+		LEFT JOIN pasien p ON rp.no_rkm_medis = p.no_rkm_medis
+		LEFT JOIN penjab pj ON rp.kd_pj = pj.kd_pj
+		WHERE rp.no_rawat = ?
+		LIMIT 1`
+	if err := r.db.QueryRow(headerQ, noRawat).Scan(
+		&resp.NoRawat, &resp.NamaPasien, &resp.NoRkmMedis, &resp.CaraBayar, &resp.Tanggal,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			return resp, fmt.Errorf("no_rawat tidak ditemukan")
+		}
+		return resp, fmt.Errorf("ambil header struk: %w", err)
+	}
+
+	// Item struk (ambil baris "nyata", skip header/cetak dan total baris).
+	itemsQ := `
+		SELECT
+			IFNULL(b.noindex, 0) AS noindex,
+			IFNULL(DATE_FORMAT(b.tgl_byr,'%Y-%m-%d'),'') AS tanggal,
+			IFNULL(b.nm_perawatan,'') AS nama,
+			IFNULL(b.jumlah, 0) AS jumlah,
+			IFNULL(b.biaya, 0) AS biaya,
+			IFNULL(b.totalbiaya, 0) AS total_biaya,
+			IFNULL(b.status,'-') AS status
+		FROM billing b
+		WHERE b.no_rawat = ?
+			AND b.status IS NOT NULL
+			AND b.status <> '-'
+			AND b.status NOT LIKE 'Ttl%%'
+			AND b.nm_perawatan <> ''
+			AND b.totalbiaya <> 0
+		ORDER BY b.noindex ASC`
+
+	rows, err := r.db.Query(itemsQ, noRawat)
+	if err != nil {
+		return resp, fmt.Errorf("ambil item struk: %w", err)
+	}
+	defer rows.Close()
+
+	subtotMap := map[string]float64{}
+	var grand float64
+	for rows.Next() {
+		var it ModelsKeuangan.StrukItem
+		if err := rows.Scan(
+			&it.NoIndex, &it.Tanggal, &it.Nama, &it.Jumlah, &it.Biaya, &it.TotalBiaya, &it.Status,
+		); err != nil {
+			return resp, err
+		}
+		resp.Items = append(resp.Items, it)
+		subtotMap[it.Status] += it.TotalBiaya
+		grand += it.TotalBiaya
+	}
+	if err := rows.Err(); err != nil {
+		return resp, err
+	}
+
+	// Subtotal per kategori (status).
+	for k, v := range subtotMap {
+		if v == 0 {
+			continue
+		}
+		resp.Subtotal = append(resp.Subtotal, ModelsKeuangan.RincianBayar{
+			Kategori: k,
+			Total:    v,
+		})
+	}
+	sort.Slice(resp.Subtotal, func(i, j int) bool {
+		if resp.Subtotal[i].Total != resp.Subtotal[j].Total {
+			return resp.Subtotal[i].Total > resp.Subtotal[j].Total
+		}
+		return resp.Subtotal[i].Kategori < resp.Subtotal[j].Kategori
+	})
+	resp.GrandTotal = grand
+
 	return resp, nil
 }
 
