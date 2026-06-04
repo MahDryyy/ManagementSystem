@@ -6,16 +6,16 @@ import (
 	"os"
 
 	controllers "BackEnd/Controllers"
+	controllersKeuangan "BackEnd/Controllers/DashboardKeuangan"
 	controllersDashboardPasien "BackEnd/Controllers/DashboardPasienControllers"
 	db "BackEnd/Database"
 	repositories "BackEnd/Repositories"
+	repositoriesDashboardKeuangan "BackEnd/Repositories/DashboardKeuangan"
 	repositoriesDashboardPasien "BackEnd/Repositories/DashboardPasien"
 	routes "BackEnd/Routes"
 	services "BackEnd/Services"
 	servicesDashboardPasien "BackEnd/Services/DashboardPasienServices"
 	servicesKeuangan "BackEnd/Services/KeuanganServices"
-	repositoriesDashboardKeuangan "BackEnd/Repositories/DashboardKeuangan"
-	controllersKeuangan "BackEnd/Controllers/DashboardKeuangan"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"

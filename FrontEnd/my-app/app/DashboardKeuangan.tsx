@@ -7,6 +7,7 @@ import {
   fetchGrafikPengeluaran,
   fetchHistoriKeuangan,
   fetchHistoriPengeluaran,
+  fetchKategoriPengeluaran,
   fetchKeuanganTotal,
   fetchPemasukanKategori,
   fetchPendapatanAkun,
@@ -18,6 +19,7 @@ import type {
   GrafikTitik,
   HistoriItem,
   HistoriPengeluaranRow,
+  KategoriPengeluaranItem,
   KeuanganPeriode,
   KeuanganTotalTitik,
   PemasukanKategoriItem,
@@ -79,6 +81,15 @@ export default function DashboardKeuangan() {
   const [pengeluaranTotal, setPengeluaranTotal] = useState(0);
   const [pengeluaranLoading, setPengeluaranLoading] = useState(false);
   const [pengeluaranLoadingMore, setPengeluaranLoadingMore] = useState(false);
+  const [pengeluaranSearch, setPengeluaranSearch] = useState("");
+  const [debouncedPengeluaranSearch, setDebouncedPengeluaranSearch] =
+    useState("");
+  const [pengeluaranPeriode, setPengeluaranPeriode] =
+    useState<KeuanganPeriode>("bulan_ini");
+  const [filterKategori, setFilterKategori] = useState("");
+  const [kategoriOptions, setKategoriOptions] = useState<
+    KategoriPengeluaranItem[]
+  >([]);
   const [showFullPengeluaran, setShowFullPengeluaran] = useState(false);
   const pengeluaranRef = useRef<HTMLDivElement>(null);
 
@@ -125,6 +136,14 @@ export default function DashboardKeuangan() {
     return () => clearTimeout(t);
   }, [search]);
 
+  useEffect(() => {
+    const t = setTimeout(
+      () => setDebouncedPengeluaranSearch(pengeluaranSearch),
+      350,
+    );
+    return () => clearTimeout(t);
+  }, [pengeluaranSearch]);
+
   const loadOverview = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -133,7 +152,7 @@ export default function DashboardKeuangan() {
         fetchRingkasanKeuangan(),
         fetchPemasukanKategori("bulan_ini"),
         fetchHistoriKeuangan(8, 0),
-        fetchHistoriPengeluaran(8, 0),
+        fetchHistoriPengeluaran({ limit: 8, offset: 0, periode: "bulan_ini" }),
       ]);
       setRingkasan(ring);
       setKategori(kat);
@@ -253,11 +272,23 @@ export default function DashboardKeuangan() {
   );
 
   const loadHistoriPengeluaranTable = useCallback(
-    async (offset = 0, append = false) => {
+    async (
+      cari: string,
+      periode: KeuanganPeriode,
+      kategori: string,
+      offset = 0,
+      append = false,
+    ) => {
       if (append) setPengeluaranLoadingMore(true);
       else setPengeluaranLoading(true);
       try {
-        const res = await fetchHistoriPengeluaran(TABLE_PAGE, offset);
+        const res = await fetchHistoriPengeluaran({
+          periode,
+          cari: cari.trim() || undefined,
+          kategori: kategori || undefined,
+          limit: TABLE_PAGE,
+          offset,
+        });
         setPengeluaranTotal(res.total);
         setPengeluaranRows((prev) =>
           append ? [...prev, ...(res.data ?? [])] : (res.data ?? []),
@@ -275,6 +306,15 @@ export default function DashboardKeuangan() {
     [],
   );
 
+  const loadKategoriPengeluaran = useCallback(async () => {
+    try {
+      const data = await fetchKategoriPengeluaran();
+      setKategoriOptions(data ?? []);
+    } catch {
+      setKategoriOptions([]);
+    }
+  }, []);
+
   useEffect(() => {
     loadOverview();
     loadGrafik("day");
@@ -282,7 +322,8 @@ export default function DashboardKeuangan() {
     loadRingkasanLaborat();
     loadRincianLaborat("bulan_ini");
     loadTable("", "bulan_ini", "", 0, false);
-    loadHistoriPengeluaranTable(0, false);
+    loadHistoriPengeluaranTable("", "bulan_ini", "", 0, false);
+    loadKategoriPengeluaran();
   }, [
     loadOverview,
     loadGrafik,
@@ -291,6 +332,7 @@ export default function DashboardKeuangan() {
     loadRincianLaborat,
     loadTable,
     loadHistoriPengeluaranTable,
+    loadKategoriPengeluaran,
   ]);
 
   useEffect(() => {
@@ -308,6 +350,21 @@ export default function DashboardKeuangan() {
   useEffect(() => {
     loadTable(debouncedSearch, periode, filterJenis, 0, false);
   }, [debouncedSearch, periode, filterJenis, loadTable]);
+
+  useEffect(() => {
+    loadHistoriPengeluaranTable(
+      debouncedPengeluaranSearch,
+      pengeluaranPeriode,
+      filterKategori,
+      0,
+      false,
+    );
+  }, [
+    debouncedPengeluaranSearch,
+    pengeluaranPeriode,
+    filterKategori,
+    loadHistoriPengeluaranTable,
+  ]);
 
   const hasMore = rows.length < rowsTotal;
   const hasMorePengeluaran = pengeluaranRows.length < pengeluaranTotal;
@@ -424,8 +481,21 @@ export default function DashboardKeuangan() {
             loadingMore={pengeluaranLoadingMore}
             hasMore={hasMorePengeluaran}
             onLoadMore={() =>
-              loadHistoriPengeluaranTable(pengeluaranRows.length, true)
+              loadHistoriPengeluaranTable(
+                debouncedPengeluaranSearch,
+                pengeluaranPeriode,
+                filterKategori,
+                pengeluaranRows.length,
+                true,
+              )
             }
+            search={pengeluaranSearch}
+            onSearchChange={setPengeluaranSearch}
+            periode={pengeluaranPeriode}
+            onPeriodeChange={setPengeluaranPeriode}
+            filterKategori={filterKategori}
+            onFilterKategoriChange={setFilterKategori}
+            kategoriOptions={kategoriOptions}
           />
         </div>
       </FadeIn>

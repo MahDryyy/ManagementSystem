@@ -3,7 +3,9 @@ import type {
   GrafikGranularity,
   GrafikTitik,
   HistoriResponse,
+  HistoriPengeluaranParams,
   HistoriPengeluaranResponse,
+  KategoriPengeluaranItem,
   KeuanganPeriode,
   KeuanganTotalTitik,
   PemasukanKategoriItem,
@@ -58,9 +60,21 @@ export function fetchHistoriKeuangan(limit = 10, offset = 0) {
   );
 }
 
-export function fetchHistoriPengeluaran(limit = 10, offset = 0) {
+export function fetchHistoriPengeluaran(params?: HistoriPengeluaranParams) {
   return apiGet<HistoriPengeluaranResponse>(
-    `/api/dashboard/keuangan/histori-pengeluaran${buildQuery({ limit, offset })}`,
+    `/api/dashboard/keuangan/histori-pengeluaran${buildQuery({
+      periode: params?.periode,
+      cari: params?.cari,
+      kategori: params?.kategori,
+      limit: params?.limit ?? 20,
+      offset: params?.offset ?? 0,
+    })}`,
+  );
+}
+
+export function fetchKategoriPengeluaran() {
+  return apiGet<KategoriPengeluaranItem[]>(
+    "/api/dashboard/keuangan/kategori-pengeluaran",
   );
 }
 

@@ -102,9 +102,16 @@ func (ctrl *KeuanganController) GetHistori(c *gin.Context) {
 }
 
 func (ctrl *KeuanganController) GetHistoriPengeluaran(c *gin.Context) {
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
-	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
-	data, err := ctrl.svc.GetHistoriPengeluaran(limit, offset)
+	data, err := ctrl.svc.GetHistoriPengeluaran(parseHistoriPengeluaranFilter(c))
+	if err != nil {
+		writeKeuanganError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}
+
+func (ctrl *KeuanganController) GetKategoriPengeluaran(c *gin.Context) {
+	data, err := ctrl.svc.GetKategoriPengeluaran()
 	if err != nil {
 		writeKeuanganError(c, err)
 		return
@@ -129,6 +136,18 @@ func (ctrl *KeuanganController) GetGrafikPendapatanLaborat(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, data)
+}
+
+func parseHistoriPengeluaranFilter(c *gin.Context) ModelsKeuangan.HistoriPengeluaranFilter {
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+	return ModelsKeuangan.HistoriPengeluaranFilter{
+		Periode:  c.DefaultQuery("periode", ModelsKeuangan.PeriodeBulanIni),
+		Cari:     strings.TrimSpace(c.Query("cari")),
+		Kategori: strings.TrimSpace(c.Query("kategori")),
+		Limit:    limit,
+		Offset:   offset,
+	}
 }
 
 func parsePendapatanFilter(c *gin.Context) ModelsKeuangan.PendapatanAkunFilter {

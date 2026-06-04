@@ -9,10 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@rive-app/react-canvas": "^4.28.6",
     "lucide-react": "^1.16.0",
-    "next": "16.2.6",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "next": "^16.2.7",
+    "ogl": "^1.0.11",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

@@ -140,9 +140,22 @@ type HistoriPengeluaranRow struct {
 	Biaya     float64 `json:"biaya"`
 }
 
+type HistoriPengeluaranFilter struct {
+	Periode  string
+	Cari     string
+	Kategori string
+	Limit    int
+	Offset   int
+}
+
 type HistoriPengeluaranResponse struct {
 	Data   []HistoriPengeluaranRow `json:"data"`
 	Total  int                   `json:"total"`
 	Limit  int                   `json:"limit"`
 	Offset int                   `json:"offset"`
+}
+
+type KategoriPengeluaranItem struct {
+	Kode string `json:"kode"`
+	Nama string `json:"nama"`
 }

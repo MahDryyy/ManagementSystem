@@ -19,7 +19,8 @@ type KeuanganRepository interface {
 	GetKeuanganTotal(periode string) ([]ModelsKeuangan.KeuanganTotalTitik, error)
 	GetPemasukanPerKategori(periode string) ([]ModelsKeuangan.PemasukanKategoriItem, error)
 	GetHistori(limit, offset int) (ModelsKeuangan.HistoriResponse, error)
-	GetHistoriPengeluaran(limit, offset int) (ModelsKeuangan.HistoriPengeluaranResponse, error)
+	GetHistoriPengeluaran(filter ModelsKeuangan.HistoriPengeluaranFilter) (ModelsKeuangan.HistoriPengeluaranResponse, error)
+	GetKategoriPengeluaran() ([]ModelsKeuangan.KategoriPengeluaranItem, error)
 	GetRingkasanPendapatanLaborat() (ModelsKeuangan.RingkasanPendapatanLaborat, error)
 	GetGrafikPendapatanLaborat(periode string) ([]ModelsKeuangan.GrafikTitik, error)
 }
@@ -838,8 +839,10 @@ func (r *keuanganRepository) GetHistori(limit, offset int) (ModelsKeuangan.Histo
 	return resp, nil
 }
 
-func (r *keuanganRepository) GetHistoriPengeluaran(limit, offset int) (ModelsKeuangan.HistoriPengeluaranResponse, error) {
+func (r *keuanganRepository) GetHistoriPengeluaran(filter ModelsKeuangan.HistoriPengeluaranFilter) (ModelsKeuangan.HistoriPengeluaranResponse, error) {
 	var resp ModelsKeuangan.HistoriPengeluaranResponse
+	limit := filter.Limit
+	offset := filter.Offset
 	if limit <= 0 {
 		limit = 10
 	}
@@ -849,14 +852,21 @@ func (r *keuanganRepository) GetHistoriPengeluaran(limit, offset int) (ModelsKeu
 	resp.Limit = limit
 	resp.Offset = offset
 
-	countQuery := fmt.Sprintf(`
-		SELECT COUNT(*)
+	whereClause, args, err := buildHistoriPengeluaranWhere(filter)
+	if err != nil {
+		return resp, err
+	}
+
+	fromJoin := `
 		FROM pengeluaran_harian ph
-		WHERE %s`, tglPengeluaranValid)
-	if err := r.db.QueryRow(countQuery).Scan(&resp.Total); err != nil {
+		LEFT JOIN kategori_pengeluaran_harian k ON ph.kode_kategori = k.kode_kategori`
+
+	countQuery := fmt.Sprintf(`SELECT COUNT(*) %s WHERE %s`, fromJoin, whereClause)
+	if err := r.db.QueryRow(countQuery, args...).Scan(&resp.Total); err != nil {
 		return resp, fmt.Errorf("hitung histori pengeluaran: %w", err)
 	}
 
+	listArgs := append(append([]any{}, args...), limit, offset)
 	listQuery := fmt.Sprintf(`
 		SELECT
 			ph.no_keluar,
@@ -864,13 +874,12 @@ func (r *keuanganRepository) GetHistoriPengeluaran(limit, offset int) (ModelsKeu
 			COALESCE(NULLIF(k.nama_kategori, ''), ph.kode_kategori, '-') AS kategori,
 			ph.keterangan,
 			ph.biaya
-		FROM pengeluaran_harian ph
-		LEFT JOIN kategori_pengeluaran_harian k ON ph.kode_kategori = k.kode_kategori
+		%s
 		WHERE %s
 		ORDER BY ph.tanggal DESC, ph.no_keluar DESC
-		LIMIT ? OFFSET ?`, tglPengeluaranValid)
+		LIMIT ? OFFSET ?`, fromJoin, whereClause)
 
-	rows, err := r.db.Query(listQuery, limit, offset)
+	rows, err := r.db.Query(listQuery, listArgs...)
 	if err != nil {
 		return resp, fmt.Errorf("histori pengeluaran: %w", err)
 	}
@@ -887,6 +896,63 @@ func (r *keuanganRepository) GetHistoriPengeluaran(limit, offset int) (ModelsKeu
 		resp.Data = []ModelsKeuangan.HistoriPengeluaranRow{}
 	}
 	return resp, rows.Err()
+}
+
+func (r *keuanganRepository) GetKategoriPengeluaran() ([]ModelsKeuangan.KategoriPengeluaranItem, error) {
+	query := `
+		SELECT DISTINCT
+			ph.kode_kategori,
+			COALESCE(NULLIF(k.nama_kategori, ''), ph.kode_kategori, '-') AS nama
+		FROM pengeluaran_harian ph
+		LEFT JOIN kategori_pengeluaran_harian k ON ph.kode_kategori = k.kode_kategori
+		WHERE ` + tglPengeluaranValid + `
+		ORDER BY nama`
+	rows, err := r.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("kategori pengeluaran: %w", err)
+	}
+	defer rows.Close()
+
+	var items []ModelsKeuangan.KategoriPengeluaranItem
+	for rows.Next() {
+		var item ModelsKeuangan.KategoriPengeluaranItem
+		if err := rows.Scan(&item.Kode, &item.Nama); err != nil {
+			return nil, err
+		}
+		items = append(items, item)
+	}
+	if items == nil {
+		items = []ModelsKeuangan.KategoriPengeluaranItem{}
+	}
+	return items, rows.Err()
+}
+
+func buildHistoriPengeluaranWhere(filter ModelsKeuangan.HistoriPengeluaranFilter) (string, []any, error) {
+	parts := []string{tglPengeluaranValid}
+	var args []any
+
+	periode := filter.Periode
+	if periode == "" {
+		periode = ModelsKeuangan.PeriodeBulanIni
+	}
+	periodeWhere, err := pengeluaranDateWhere(periode)
+	if err != nil {
+		return "", nil, err
+	}
+	parts = append(parts, periodeWhere)
+
+	if k := strings.TrimSpace(filter.Kategori); k != "" {
+		parts = append(parts, `COALESCE(NULLIF(k.nama_kategori, ''), ph.kode_kategori, '-') = ?`)
+		args = append(args, k)
+	}
+
+	if c := strings.TrimSpace(filter.Cari); c != "" {
+		like := "%" + c + "%"
+		parts = append(parts, `(ph.no_keluar LIKE ? OR ph.keterangan LIKE ? OR k.nama_kategori LIKE ? OR ph.kode_kategori LIKE ?)`)
+		args = append(args, like, like, like, like)
+	}
+
+	return strings.Join(parts, " AND "), args, nil
 }
 
 func pengeluaranDateWhere(periode string) (string, error) {

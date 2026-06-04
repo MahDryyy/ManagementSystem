@@ -121,6 +121,19 @@ export type HistoriPengeluaranResponse = {
   offset: number;
 };
 
+export type KategoriPengeluaranItem = {
+  kode: string;
+  nama: string;
+};
+
+export type HistoriPengeluaranParams = {
+  periode?: KeuanganPeriode;
+  cari?: string;
+  kategori?: string;
+  limit?: number;
+  offset?: number;
+};
+
 export const KEUANGAN_PERIODE_OPTIONS: { value: KeuanganPeriode; label: string }[] =
   [
     { value: "hari_ini", label: "Hari ini" },
