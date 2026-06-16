@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import DashboardKeuangan from "@/app/DashboardKeuangan";
 import DashboardPasien from "@/app/DashboardPasien";
 import DashboardHeader from "@/components/DashboardHeader";
+import DashboardLaporan from "@/components/dashboard-laporan/DashboardLaporan";
 import LoginPage from "@/components/LoginPage";
 import SettingsPage from "@/components/settings/SettingsPage";
 import Sidebar from "@/components/Sidebar";
@@ -123,6 +124,7 @@ export default function AppShell() {
   const renderMain = () => {
     if (activeRoute === "dashboard-pasien") return <DashboardPasien />;
     if (activeRoute === "dashboard-keuangan") return <DashboardKeuangan />;
+    if (activeRoute === "dashboard-laporan") return <DashboardLaporan />;
     if (activeRoute === "settings") return <SettingsPage />;
     return <PlaceholderPage title={routeTitles[activeRoute]} />;
   };

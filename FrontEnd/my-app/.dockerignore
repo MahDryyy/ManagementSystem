@@ -1,0 +1,28 @@
+# Dependencies & build output
+node_modules
+.next
+out
+
+# Git & IDE
+.git
+.gitignore
+.idea
+.vscode
+
+# Environment
+.env
+.env.*
+
+# Docker
+docker-compose.yml
+dockerfile
+Dockerfile
+.dockerignore
+
+# Logs & OS
+*.log
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage

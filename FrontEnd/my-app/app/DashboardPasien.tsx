@@ -16,6 +16,7 @@ import type {
   KategoriUmurPeriode,
   PasienBaris,
   PenjaminFilter,
+  RawatFilter,
 } from "@/lib/types/dashboard-pasien";
 import AgePieChart from "@/components/dashboard-pasien/AgePieChart";
 import DiagnosaBarChart from "@/components/dashboard-pasien/DiagnosaBarChart";
@@ -57,6 +58,7 @@ export default function DashboardPasien() {
   const [search, setSearch] = useState("");
   const [filterGender, setFilterGender] = useState("");
   const [filterPenjamin, setFilterPenjamin] = useState<PenjaminFilter>("");
+  const [filterRawat, setFilterRawat] = useState<RawatFilter>("");
   const [drilldown, setDrilldown] = useState<DrilldownModalConfig | null>(null);
   const [detailPasienId, setDetailPasienId] = useState<string | null>(null);
 
@@ -110,6 +112,7 @@ export default function DashboardPasien() {
       cari: string,
       jk: string,
       penjamin: PenjaminFilter,
+      rawat: RawatFilter,
       offset = 0,
       append = false,
     ) => {
@@ -120,6 +123,7 @@ export default function DashboardPasien() {
           cari: cari.trim() || undefined,
           jenis_kelamin: jk || undefined,
           penjamin: penjamin || undefined,
+          status_lanjut: rawat || undefined,
           limit: DAFTAR_PAGE_SIZE,
           offset,
         });
@@ -141,8 +145,22 @@ export default function DashboardPasien() {
   );
 
   const loadMorePatients = useCallback(() => {
-    loadPatients(search, filterGender, filterPenjamin, patients.length, true);
-  }, [loadPatients, search, filterGender, filterPenjamin, patients.length]);
+    loadPatients(
+      search,
+      filterGender,
+      filterPenjamin,
+      filterRawat,
+      patients.length,
+      true,
+    );
+  }, [
+    loadPatients,
+    search,
+    filterGender,
+    filterPenjamin,
+    filterRawat,
+    patients.length,
+  ]);
 
   useEffect(() => {
     loadDashboard();
@@ -165,10 +183,10 @@ export default function DashboardPasien() {
   useEffect(() => {
     if (loading) return;
     const t = setTimeout(() => {
-      loadPatients(search, filterGender, filterPenjamin);
+      loadPatients(search, filterGender, filterPenjamin, filterRawat);
     }, 400);
     return () => clearTimeout(t);
-  }, [search, filterGender, filterPenjamin, loadPatients, loading]);
+  }, [search, filterGender, filterPenjamin, filterRawat, loadPatients, loading]);
 
   if (loading) {
     return <DashboardPasienSkeleton />;
@@ -341,6 +359,8 @@ export default function DashboardPasien() {
           onFilterGenderChange={setFilterGender}
           filterPenjamin={filterPenjamin}
           onFilterPenjaminChange={setFilterPenjamin}
+          filterRawat={filterRawat}
+          onFilterRawatChange={setFilterRawat}
           onRowClick={(row) => setDetailPasienId(row.id)}
         />
       </FadeIn>

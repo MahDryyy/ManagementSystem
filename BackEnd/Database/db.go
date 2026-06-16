@@ -12,10 +12,7 @@ import (
 
 func ConnectDB() (*sql.DB, error) {
 
-	err := godotenv.Load()
-	if err != nil {
-		return nil, fmt.Errorf("failed load env: %w", err)
-	}
+	_ = godotenv.Load()
 
 	dsn := fmt.Sprintf(
 		"%s:%s@tcp(%s:%s)/%s?parseTime=true&charset=utf8mb4&loc=Local",

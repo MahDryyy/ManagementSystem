@@ -1,8 +1,15 @@
 "use client";
 
 import { Search } from "lucide-react";
-import type { PasienBaris, PenjaminFilter } from "@/lib/types/dashboard-pasien";
-import { PENJAMIN_FILTER_OPTIONS } from "@/lib/types/dashboard-pasien";
+import type {
+  PasienBaris,
+  PenjaminFilter,
+  RawatFilter,
+} from "@/lib/types/dashboard-pasien";
+import {
+  PENJAMIN_FILTER_OPTIONS,
+  RAWAT_FILTER_OPTIONS,
+} from "@/lib/types/dashboard-pasien";
 import { AnimatedTableRow } from "@/components/ui/AnimatedTableRow";
 import { Skeleton } from "@/components/ui/Skeleton";
 
@@ -19,6 +26,8 @@ type PatientsTableProps = {
   onFilterGenderChange: (v: string) => void;
   filterPenjamin: PenjaminFilter;
   onFilterPenjaminChange: (v: PenjaminFilter) => void;
+  filterRawat: RawatFilter;
+  onFilterRawatChange: (v: RawatFilter) => void;
   onRowClick?: (row: PasienBaris) => void;
 };
 
@@ -48,6 +57,8 @@ export default function PatientsTable({
   onFilterGenderChange,
   filterPenjamin,
   onFilterPenjaminChange,
+  filterRawat,
+  onFilterRawatChange,
   onRowClick,
 }: PatientsTableProps) {
   return (
@@ -76,6 +87,20 @@ export default function PatientsTable({
               className="w-full rounded-lg border border-zinc-200 bg-white py-2 pr-3 pl-9 text-sm text-black placeholder:text-zinc-400 outline-none focus:border-cyan-300 focus:ring-2 focus:ring-cyan-100"
             />
           </div>
+          <select
+            value={filterRawat}
+            onChange={(e) =>
+              onFilterRawatChange(e.target.value as RawatFilter)
+            }
+            className="rounded-lg border border-zinc-200 px-3 py-2 text-sm text-zinc-700 outline-none focus:border-cyan-300"
+            aria-label="Filter jenis rawat"
+          >
+            {RAWAT_FILTER_OPTIONS.map((opt) => (
+              <option key={opt.value || "all-rawat"} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
           <select
             value={filterPenjamin}
             onChange={(e) =>
