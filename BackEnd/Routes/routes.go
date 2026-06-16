@@ -4,6 +4,7 @@ import (
 	controllers "BackEnd/Controllers"
 	controllersKeuangan "BackEnd/Controllers/DashboardKeuangan"
 	controllersDashboardPasien "BackEnd/Controllers/DashboardPasienControllers"
+	controllersLaporan "BackEnd/Controllers/LaporanControllers"
 	cors "BackEnd/Middleware"
 	"net/http"
 
@@ -17,6 +18,7 @@ func Setup(
 	dashboardCtrl *controllersDashboardPasien.DashboardController,
 	keuanganCtrl *controllersKeuangan.KeuanganController,
 	diagnosaCtrl *controllersDashboardPasien.DiagnosaController,
+	laporanCtrl *controllersLaporan.LaporanController,
 ) {
 	router.Use(cors.CorsMiddleware())
 
@@ -76,6 +78,16 @@ func Setup(
 		diagnosa := api.Group("/dashboard/diagnosa")
 		{
 			diagnosa.GET("/terbanyak", diagnosaCtrl.GetDiagnosaTerbanyak)
+		}
+
+		laporan := api.Group("/laporan")
+		{
+			// Keuangan exports
+			laporan.GET("/keuangan/csv", laporanCtrl.ExportKeuanganCSV)
+			laporan.GET("/keuangan/ringkasan/csv", laporanCtrl.ExportKeuanganSummaryCSV)
+			// Pasien exports
+			laporan.GET("/pasien/csv", laporanCtrl.ExportPasienCSV)
+			laporan.GET("/pasien/ringkasan/csv", laporanCtrl.ExportPasienSummaryCSV)
 		}
 	}
 }

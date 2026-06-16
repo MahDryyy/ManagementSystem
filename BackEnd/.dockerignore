@@ -1,0 +1,27 @@
+# Git & IDE
+.git
+.gitignore
+.idea
+.vscode
+
+# Environment (gunakan env dari docker-compose)
+.env
+.env.*
+
+# Docker files (tidak perlu di image)
+docker-compose.yml
+dockerfile
+Dockerfile
+.dockerignore
+
+# Data & SQL dump besar (hanya untuk dev lokal)
+SQL/
+*.sql
+
+# Utility CLI, bukan bagian server
+cmd/
+
+# Logs & OS
+*.log
+.DS_Store
+Thumbs.db

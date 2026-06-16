@@ -8,6 +8,7 @@ import (
 	controllers "BackEnd/Controllers"
 	controllersKeuangan "BackEnd/Controllers/DashboardKeuangan"
 	controllersDashboardPasien "BackEnd/Controllers/DashboardPasienControllers"
+	controllersLaporan "BackEnd/Controllers/LaporanControllers"
 	db "BackEnd/Database"
 	repositories "BackEnd/Repositories"
 	repositoriesDashboardKeuangan "BackEnd/Repositories/DashboardKeuangan"
@@ -50,8 +51,10 @@ func main() {
 	diagnosaSvc := servicesDashboardPasien.NewDiagnosaService(diagnosaRepo)
 	diagnosaCtrl := controllersDashboardPasien.NewDiagnosaController(diagnosaSvc)
 
+	laporanCtrl := controllersLaporan.NewLaporanController(keuanganSvc, dashboardSvc)
+
 	router := gin.Default()
-	routes.Setup(router, authCtrl, adminCtrl, dashboardCtrl, keuanganCtrl, diagnosaCtrl)
+	routes.Setup(router, authCtrl, adminCtrl, dashboardCtrl, keuanganCtrl, diagnosaCtrl, laporanCtrl)
 
 	port := os.Getenv("PORT")
 	if port == "" {

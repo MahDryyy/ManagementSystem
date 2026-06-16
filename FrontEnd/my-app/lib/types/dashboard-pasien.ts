@@ -108,11 +108,14 @@ export type DiagnosaTerbanyakResponse = {
 /** Filter penjamin daftar pasien — sama dengan query `penjamin` di backend. */
 export type PenjaminFilter = "" | "bpjs" | "umum";
 
+/** Filter jenis rawat — sama dengan query `status_lanjut` di backend (Ralan | Ranap). */
+export type RawatFilter = "" | "Ralan" | "Ranap";
+
 export type PasienFilterParams = {
   cari?: string;
   no_rkm_medis?: string;
   jenis_kelamin?: string;
-  status_lanjut?: string;
+  status_lanjut?: RawatFilter;
   penjamin?: PenjaminFilter;
   limit?: number;
   offset?: number;
@@ -125,6 +128,15 @@ export const PENJAMIN_FILTER_OPTIONS: {
   { value: "", label: "Semua penjamin" },
   { value: "bpjs", label: "BPJS" },
   { value: "umum", label: "Umum" },
+];
+
+export const RAWAT_FILTER_OPTIONS: {
+  value: RawatFilter;
+  label: string;
+}[] = [
+  { value: "", label: "Semua rawat" },
+  { value: "Ralan", label: "Rawat Jalan" },
+  { value: "Ranap", label: "Rawat Inap" },
 ];
 
 /** Nilai `periode` query — sama dengan konstanta di BackEnd/Models/ModelsDiagnosa.go */
