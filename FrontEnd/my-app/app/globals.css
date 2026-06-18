@@ -1,13 +1,39 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #F8FAFB;
+  --foreground: #1A202C;
+  --card: #ffffff;
+  --card-foreground: #1A202C;
+  --primary: #00B4D8;
+  --primary-foreground: #ffffff;
+  --muted: #EDF2F7;
+  --muted-foreground: #718096;
+  --destructive: #E53E3E;
+  --destructive-foreground: #ffffff;
+  --success: #38A169;
+  --success-foreground: #ffffff;
+  --warning: #DD6B20;
+  --warning-foreground: #ffffff;
+  --border: #E2E8F0;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 

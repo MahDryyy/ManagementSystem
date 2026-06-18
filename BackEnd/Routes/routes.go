@@ -3,6 +3,7 @@ package routes
 import (
 	controllers "BackEnd/Controllers"
 	controllersKeuangan "BackEnd/Controllers/DashboardKeuangan"
+	controllersDashboardObat "BackEnd/Controllers/DashboardObatControllers"
 	controllersDashboardPasien "BackEnd/Controllers/DashboardPasienControllers"
 	controllersLaporan "BackEnd/Controllers/LaporanControllers"
 	cors "BackEnd/Middleware"
@@ -18,7 +19,11 @@ func Setup(
 	dashboardCtrl *controllersDashboardPasien.DashboardController,
 	keuanganCtrl *controllersKeuangan.KeuanganController,
 	diagnosaCtrl *controllersDashboardPasien.DiagnosaController,
+<<<<<<< HEAD
 	laporanCtrl *controllersLaporan.LaporanController,
+=======
+	dashboardObatCtrl *controllersDashboardObat.DashboardObatController,
+>>>>>>> b478ff0 (penambahan dashboard obat)
 ) {
 	router.Use(cors.CorsMiddleware())
 
@@ -80,6 +85,7 @@ func Setup(
 			diagnosa.GET("/terbanyak", diagnosaCtrl.GetDiagnosaTerbanyak)
 		}
 
+<<<<<<< HEAD
 		laporan := api.Group("/laporan")
 		{
 			// Keuangan exports
@@ -88,6 +94,11 @@ func Setup(
 			// Pasien exports
 			laporan.GET("/pasien/csv", laporanCtrl.ExportPasienCSV)
 			laporan.GET("/pasien/ringkasan/csv", laporanCtrl.ExportPasienSummaryCSV)
+=======
+		obat := api.Group("/dashboard/obat")
+		{
+			obat.GET("", dashboardObatCtrl.GetDashboard)
+>>>>>>> b478ff0 (penambahan dashboard obat)
 		}
 	}
 }

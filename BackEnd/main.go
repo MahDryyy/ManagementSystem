@@ -7,14 +7,17 @@ import (
 
 	controllers "BackEnd/Controllers"
 	controllersKeuangan "BackEnd/Controllers/DashboardKeuangan"
+	controllersDashboardObat "BackEnd/Controllers/DashboardObatControllers"
 	controllersDashboardPasien "BackEnd/Controllers/DashboardPasienControllers"
 	controllersLaporan "BackEnd/Controllers/LaporanControllers"
 	db "BackEnd/Database"
 	repositories "BackEnd/Repositories"
 	repositoriesDashboardKeuangan "BackEnd/Repositories/DashboardKeuangan"
+	repositoriesDashboardObat "BackEnd/Repositories/DashboardObat"
 	repositoriesDashboardPasien "BackEnd/Repositories/DashboardPasien"
 	routes "BackEnd/Routes"
 	services "BackEnd/Services"
+	servicesDashboardObat "BackEnd/Services/DashboardObatServices"
 	servicesDashboardPasien "BackEnd/Services/DashboardPasienServices"
 	servicesKeuangan "BackEnd/Services/KeuanganServices"
 
@@ -51,10 +54,19 @@ func main() {
 	diagnosaSvc := servicesDashboardPasien.NewDiagnosaService(diagnosaRepo)
 	diagnosaCtrl := controllersDashboardPasien.NewDiagnosaController(diagnosaSvc)
 
+<<<<<<< HEAD
 	laporanCtrl := controllersLaporan.NewLaporanController(keuanganSvc, dashboardSvc)
 
 	router := gin.Default()
 	routes.Setup(router, authCtrl, adminCtrl, dashboardCtrl, keuanganCtrl, diagnosaCtrl, laporanCtrl)
+=======
+	dashboardObatRepo := repositoriesDashboardObat.NewDashboardObatRepository(database)
+	dashboardObatSvc := servicesDashboardObat.NewDashboardObatService(dashboardObatRepo)
+	dashboardObatCtrl := controllersDashboardObat.NewDashboardObatController(dashboardObatSvc)
+
+	router := gin.Default()
+	routes.Setup(router, authCtrl, adminCtrl, dashboardCtrl, keuanganCtrl, diagnosaCtrl, dashboardObatCtrl)
+>>>>>>> b478ff0 (penambahan dashboard obat)
 
 	port := os.Getenv("PORT")
 	if port == "" {
