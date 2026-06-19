@@ -125,11 +125,8 @@ export default function AppShell() {
   const renderMain = () => {
     if (activeRoute === "dashboard-pasien") return <DashboardPasien />;
     if (activeRoute === "dashboard-keuangan") return <DashboardKeuangan />;
-<<<<<<< HEAD
     if (activeRoute === "dashboard-laporan") return <DashboardLaporan />;
-=======
     if (activeRoute === "dashboard-obat") return <DashboardObat />;
->>>>>>> b478ff0 (penambahan dashboard obat)
     if (activeRoute === "settings") return <SettingsPage />;
     return <PlaceholderPage title={routeTitles[activeRoute]} />;
   };
