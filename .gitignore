@@ -1,0 +1,4 @@
+# Test artifacts (not Go test sources)
+test/screenshot-*
+test/node_modules/
+test/
