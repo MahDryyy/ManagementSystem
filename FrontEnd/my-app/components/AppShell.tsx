@@ -41,7 +41,6 @@ function isLargeViewport() {
 export default function AppShell() {
   const { user, loading, logout, canAccess, firstAllowedRoute } = useAuth();
   const [activeRoute, setActiveRoute] = useState<AppRoute>(DEFAULT_ROUTE);
-  const [headerSearch, setHeaderSearch] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [desktopCollapsed, setDesktopCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);

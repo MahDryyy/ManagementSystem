@@ -178,8 +178,6 @@ export default function DashboardLaporan() {
   const [downloadState, setDownloadState] = useState<DownloadState>({});
   const [lastDownload, setLastDownload] = useState<string | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
-  // New state for diagnosis statistics
-  const [diagnosisStats, setDiagnosisStats] = useState<Array<{ diagnosis: string; count: number }>>([]);
   // Ref for PDF export
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -198,22 +196,6 @@ export default function DashboardLaporan() {
     }, 3000);
     return () => clearTimeout(t);
   }, [downloadState]);
-
-  // Fetch diagnosis statistics when periode changes
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/laporan/diagnosa?range=${selectedPeriode}`);
-        if (!res.ok) throw new Error('Failed to fetch diagnosis stats');
-        const data = await res.json();
-        setDiagnosisStats(data);
-      } catch (e) {
-        console.error(e);
-        setDiagnosisStats([]);
-      }
-    };
-    fetchStats();
-  }, [selectedPeriode]);
 
   const toggleType = (key: ReportType, available: boolean) => {
     if (!available) return;

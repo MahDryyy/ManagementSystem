@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import LoginMascot from "@/components/ui/LoginMascot";
-import Aurora from "@/components/ui/Aurora";
 import { User, LockKeyhole, Eye, EyeOff, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {

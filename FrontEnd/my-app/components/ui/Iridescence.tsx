@@ -68,6 +68,7 @@ export default function Iridescence({
     const gl = renderer.gl;
     gl.clearColor(1, 1, 1, 1);
 
+    // eslint-disable-next-line prefer-const -- assigned later after GL setup
     let program: Program;
 
     function resize() {

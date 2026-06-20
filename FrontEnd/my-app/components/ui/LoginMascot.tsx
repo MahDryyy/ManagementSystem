@@ -43,6 +43,7 @@ export default function LoginMascot({
     "numLook"
   );
 
+  /* eslint-disable react-hooks/immutability -- Rive state machine inputs are set via .value, this is the official API */
   useEffect(() => {
     if (isChecking) {
       isChecking.value = usernameFocused;

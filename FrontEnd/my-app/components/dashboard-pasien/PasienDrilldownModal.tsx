@@ -227,7 +227,7 @@ export default function PasienDrilldownModal({
       return;
     }
     load(0);
-  }, [config?.tipe, config?.periode, config?.kategori, config?.kd_penyakit, config?.title, load]);
+  }, [config?.tipe, config?.periode, config?.kategori, config?.kd_penyakit, config?.title, config, load]);
 
   useEffect(() => {
     if (!config) return;

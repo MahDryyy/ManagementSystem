@@ -7,7 +7,6 @@ import {
   type DiagnosaTerbanyakItem,
 } from "@/lib/types/dashboard-pasien";
 import {
-  animateNumber,
   useAnimateProgress,
 } from "@/lib/hooks/useAnimateProgress";
 import { Skeleton } from "@/components/ui/Skeleton";
