@@ -121,6 +121,14 @@ export default function SettingsPage() {
   const addUser = async () => {
     setMsg(null);
     setError(null);
+    if (!newUsername.trim()) {
+      setError("Username wajib diisi");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setError("Password minimal 6 karakter");
+      return;
+    }
     try {
       await createUser({
         username: newUsername,
@@ -155,8 +163,12 @@ export default function SettingsPage() {
   };
 
   const resetUserPassword = async (u: UserItem) => {
-    const pw = prompt(`Password baru untuk ${u.username}:`);
+    const pw = prompt(`Password baru untuk ${u.username} (minimal 6 karakter):`);
     if (!pw) return;
+    if (pw.length < 6) {
+      setError("Password minimal 6 karakter");
+      return;
+    }
     try {
       await updateUser(u.id, { password: pw });
       setMsg(`Password ${u.username} diperbarui`);
@@ -311,8 +323,22 @@ export default function SettingsPage() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Password (min. 6)"
-                className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400"
+                className={`w-full rounded-lg border bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 ${
+                  newPassword.length > 0 && newPassword.length < 6
+                    ? "border-red-300 focus:ring-red-400"
+                    : "border-zinc-200"
+                }`}
               />
+              <p className={`text-xs ${
+                newPassword.length > 0 && newPassword.length < 6
+                  ? "text-red-500"
+                  : "text-zinc-400"
+              }`}>
+                Password harus minimal 6 karakter
+                {newPassword.length > 0 && newPassword.length < 6
+                  ? ` (${newPassword.length}/6)`
+                  : ""}
+              </p>
               <select
                 value={newUserRoleId}
                 onChange={(e) => setNewUserRoleId(Number(e.target.value))}
@@ -327,7 +353,8 @@ export default function SettingsPage() {
               <button
                 type="button"
                 onClick={addUser}
-                className="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white"
+                disabled={newPassword.length > 0 && newPassword.length < 6}
+                className="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Tambah user
               </button>

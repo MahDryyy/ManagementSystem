@@ -97,7 +97,7 @@ func (r *authRepository) GetDashboardKeysForRole(roleID int64, isSuperadmin bool
 		return append([]string{}, ModelsAuth.AllDashboardKeys...), nil
 	}
 	rows, err := r.db.Query(`
-		SELECT dashboard_key FROM role_permissions WHERE role_id = ? ORDER BY dashboard_key
+		SELECT permission_key FROM role_permissions WHERE role_id = ? ORDER BY permission_key
 	`, roleID)
 	if err != nil {
 		return nil, err
@@ -332,7 +332,7 @@ func insertRolePermissions(tx *sql.Tx, roleID int64, keys []string) error {
 		}
 		seen[k] = true
 		if _, err := tx.Exec(`
-			INSERT INTO role_permissions (role_id, dashboard_key) VALUES (?, ?)
+			INSERT INTO role_permissions (role_id, permission_key) VALUES (?, ?)
 		`, roleID, k); err != nil {
 			return err
 		}
