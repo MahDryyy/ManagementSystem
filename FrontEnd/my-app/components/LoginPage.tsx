@@ -4,12 +4,14 @@ import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import LoginMascot from "@/components/ui/LoginMascot";
 import Aurora from "@/components/ui/Aurora";
+import { User, LockKeyhole, Eye, EyeOff, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
   const { login } = useAuth();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const [usernameFocused, setUsernameFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
@@ -71,20 +73,25 @@ export default function LoginPage() {
                 Username
               </label>
 
-              <input
-                id="login-username"
-                type="text"
-                autoComplete="username"
-                value={username}
-                onFocus={() => {
-                  setUsernameFocused(true);
-                  setPasswordFocused(false);
-                }}
-                onBlur={() => setUsernameFocused(false)}
-                onChange={(e) => setUsername(e.target.value)}
-                className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition-colors focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
-                required
-              />
+              <div className="relative mt-1.5">
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-400">
+                  <User className="h-4 w-4" />
+                </span>
+                <input
+                  id="login-username"
+                  type="text"
+                  autoComplete="username"
+                  value={username}
+                  onFocus={() => {
+                    setUsernameFocused(true);
+                    setPasswordFocused(false);
+                  }}
+                  onBlur={() => setUsernameFocused(false)}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-200 bg-white pl-10 pr-3 py-2.5 text-sm text-zinc-900 outline-none transition-colors focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                  required
+                />
+              </div>
             </div>
 
             <div>
@@ -95,26 +102,44 @@ export default function LoginPage() {
                 Password
               </label>
 
-              <input
-                id="login-password"
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onFocus={() => {
-                  setPasswordFocused(true);
-                  setUsernameFocused(false);
-                }}
-                onBlur={() => setPasswordFocused(false)}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1.5 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition-colors focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
-                required
-              />
+              <div className="relative mt-1.5">
+                <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-zinc-400">
+                  <LockKeyhole className="h-4 w-4" />
+                </span>
+                <input
+                  id="login-password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  value={password}
+                  onFocus={() => {
+                    setPasswordFocused(true);
+                    setUsernameFocused(false);
+                  }}
+                  onBlur={() => setPasswordFocused(false)}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-lg border border-zinc-200 bg-white pl-10 pr-10 py-2.5 text-sm text-zinc-900 outline-none transition-colors focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-zinc-500 transition-colors hover:text-cyan-600"
+                  aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
             </div>
 
             {error && (
-              <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
-                {error}
-              </p>
+              <div className="flex items-start gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{error}</span>
+              </div>
             )}
 
             <button
