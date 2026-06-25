@@ -189,6 +189,7 @@ export type KategoriUmurPeriode =
   | "hari_ini"
   | "minggu_ini"
   | "bulan_ini"
+  | "tahun_ini"
   | "semua";
 
 export const KATEGORI_UMUR_PERIODE_OPTIONS: {
@@ -198,5 +199,6 @@ export const KATEGORI_UMUR_PERIODE_OPTIONS: {
   { value: "hari_ini", label: "Harian" },
   { value: "minggu_ini", label: "Mingguan" },
   { value: "bulan_ini", label: "Bulanan" },
+  { value: "tahun_ini", label: "Tahunan" },
   { value: "semua", label: "Semua waktu" },
 ];

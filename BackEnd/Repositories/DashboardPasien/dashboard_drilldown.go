@@ -97,6 +97,10 @@ func (r *dashboardRepository) drilldownKategoriUmur(
 		return nil, 0, fmt.Errorf("kategori wajib diisi")
 	}
 
+	if isKategoriKhusus(kategori) {
+		return r.drilldownKategoriKhusus(periode, kategori, limit, offset)
+	}
+
 	resolved, err := ResolvePeriode(periode)
 	if err != nil {
 		return nil, 0, err
@@ -170,6 +174,66 @@ func (r *dashboardRepository) drilldownKategoriUmur(
 
 	listArgs := append(args, limit, offset)
 	return r.queryPasienBaris(listQuery, listArgs, total)
+}
+
+func (r *dashboardRepository) drilldownKategoriKhusus(
+	periode, kategori string,
+	limit, offset int,
+) ([]ModelsPasien.PasienBaris, int, error) {
+	resolved, err := ResolvePeriode(periode)
+	if err != nil {
+		return nil, 0, err
+	}
+	andClause, err := periodeRegistrasiAndClause(resolved)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	cond, err := kategoriKhususCondition(kategori)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	fromSQL := `
+		FROM reg_periksa rp
+		INNER JOIN pasien p ON rp.no_rkm_medis = p.no_rkm_medis
+		LEFT JOIN penjab pj ON rp.kd_pj = pj.kd_pj
+		WHERE p.tgl_lahir IS NOT NULL AND p.tgl_lahir <> '0000-00-00'
+	` + andClause + ` AND ` + cond
+
+	var total int
+	if err := r.db.QueryRow(`SELECT COUNT(DISTINCT p.no_rkm_medis) ` + fromSQL).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("hitung kategori khusus: %w", err)
+	}
+
+	listQuery := `
+		SELECT
+			p.no_rkm_medis,
+			p.nm_pasien,
+			IFNULL(p.no_tlp, ''),
+			IFNULL((
+				SELECT GROUP_CONCAT(DISTINCT peny.nm_penyakit ORDER BY dp.prioritas SEPARATOR ', ')
+				FROM diagnosa_pasien dp
+				INNER JOIN penyakit peny ON dp.kd_penyakit = peny.kd_penyakit
+				WHERE dp.no_rawat = rp.no_rawat
+				LIMIT 3
+			), '-'),
+			p.tgl_lahir,
+			TIMESTAMPDIFF(YEAR, p.tgl_lahir, CURDATE()),
+			p.jk,
+			IFNULL(rp.status_lanjut, '-'),
+			IFNULL(pj.png_jawab, '-'),
+			` + sqlRuanganKosong + `,
+			` + sqlTglMasuk + `,
+			` + sqlTglKeluar + `,
+			IFNULL(rp.no_rawat, '')
+	` + fromSQL + `
+		GROUP BY p.no_rkm_medis, p.nm_pasien, p.no_tlp, p.tgl_lahir, p.jk, rp.status_lanjut, pj.png_jawab, rp.no_rawat
+		ORDER BY p.nm_pasien ASC
+		LIMIT ? OFFSET ?
+	`
+
+	return r.queryPasienBaris(listQuery, []any{limit, offset}, total)
 }
 
 func (r *dashboardRepository) drilldownStatusJalanAktif(limit, offset int) ([]ModelsPasien.PasienBaris, int, error) {

@@ -56,11 +56,31 @@ func (r *dashboardRepository) GetKategoriUmur(periode string) ([]ModelsPasien.Ka
 		return nil, err
 	}
 
-	andClause, err := periodeRegistrasiAndClause(resolved)
+	counts, err := r.queryKategoriUmurAgeCounts(resolved)
 	if err != nil {
 		return nil, err
 	}
 
+	for _, kategori := range kategoriUmurDisplayOrder() {
+		if !isKategoriKhusus(kategori) {
+			continue
+		}
+		n, err := r.countKategoriKhusus(resolved, kategori)
+		if err != nil {
+			return nil, err
+		}
+		counts[kategori] = n
+	}
+
+	return buildKategoriUmurResult(counts), nil
+}
+
+func (r *dashboardRepository) queryKategoriUmurAgeCounts(periode string) (map[string]int, error) {
+	andClause, err := periodeRegistrasiAndClause(periode)
+	if err != nil {
+		return nil, err
+	}
+	
 	caseSQL, args := kategoriUmurCaseSQL()
 	caseSQL += ` AS kategori`
 
@@ -86,40 +106,46 @@ func (r *dashboardRepository) GetKategoriUmur(periode string) ([]ModelsPasien.Ka
 	}
 	defer rows.Close()
 
-	return scanKategoriUmurRows(rows)
-}
-
-func scanKategoriUmurRows(rows *sql.Rows) ([]ModelsPasien.KategoriUmurItem, error) {
 	counts := map[string]int{}
 	for rows.Next() {
-		var item ModelsPasien.KategoriUmurItem
-		if err := rows.Scan(&item.Kategori, &item.Jumlah); err != nil {
+		var kategori string
+		var jumlah int
+		if err := rows.Scan(&kategori, &jumlah); err != nil {
 			return nil, err
 		}
-		if item.Kategori != "" {
-			counts[item.Kategori] = item.Jumlah
+		if kategori != "" {
+			counts[kategori] = jumlah
 		}
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
+	return counts, nil
+}
 
-	order := []string{
-		ModelsPasien.KategoriIbuHamil,
-		ModelsPasien.KategoriIbuBersalin,
-		ModelsPasien.KategoriUmurBayiBaruLahir,
-		ModelsPasien.KategoriUmurBalita,
-		ModelsPasien.KategoriUmurPendidikan,
-		ModelsPasien.KategoriUmurProduktif,
-		ModelsPasien.KategoriUmurLanjut,
-		ModelsPasien.KategoriDM,
-		ModelsPasien.KategoriHT,
+func (r *dashboardRepository) countKategoriKhusus(periode, kategori string) (int, error) {
+	cond, err := kategoriKhususCondition(kategori)
+	if err != nil {
+		return 0, err
 	}
-	result := make([]ModelsPasien.KategoriUmurItem, 0, len(order))
-	for _, k := range order {
-		result = append(result, ModelsPasien.KategoriUmurItem{Kategori: k, Jumlah: counts[k]})
+
+	andClause, err := periodeRegistrasiAndClause(periode)
+	if err != nil {
+		return 0, err
 	}
-	return result, nil
+
+	query := `
+		SELECT COUNT(DISTINCT p.no_rkm_medis)
+		FROM reg_periksa rp
+		INNER JOIN pasien p ON rp.no_rkm_medis = p.no_rkm_medis
+		WHERE p.tgl_lahir IS NOT NULL AND p.tgl_lahir <> '0000-00-00'
+	` + andClause + ` AND ` + cond
+
+	var total int
+	if err := r.db.QueryRow(query).Scan(&total); err != nil {
+		return 0, fmt.Errorf("hitung %s: %w", kategori, err)
+	}
+	return total, nil
 }
 
 func (r *dashboardRepository) GetStatusPerawatan() (ModelsPasien.StatusPerawatan, error) {

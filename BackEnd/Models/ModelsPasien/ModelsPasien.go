@@ -243,7 +243,7 @@ const (
 // PasienDrilldownFilter parameter daftar pasien saat kartu/chart diklik.
 type PasienDrilldownFilter struct {
 	Tipe       string `json:"tipe"`
-	Periode    string `json:"periode"`     // hari_ini | minggu_ini | bulan_ini | semua
+	Periode    string `json:"periode"`     // hari_ini | minggu_ini | bulan_ini | tahun_ini | semua
 	Kategori   string `json:"kategori"`    // label kategori umur (untuk tipe kategori_umur)
 	KdPenyakit string `json:"kd_penyakit"` // kode penyakit (untuk tipe diagnosa)
 	Limit      int    `json:"limit"`

@@ -12,7 +12,17 @@ import {
 } from "@/lib/hooks/useAnimateProgress";
 import { Skeleton } from "@/components/ui/Skeleton";
 
-const COLORS = ["#00B8D9", "#8B5CF6", "#F59E0B", "#10B981", "#EC4899"];
+const COLORS = [
+  "#EC4899",
+  "#F97316",
+  "#00B8D9",
+  "#8B5CF6",
+  "#F59E0B",
+  "#10B981",
+  "#6366F1",
+  "#14B8A6",
+  "#EF4444",
+];
 const CX = 90;
 const CY = 90;
 const R = 70;
@@ -60,7 +70,7 @@ function PieChartBodySkeleton() {
     <div className="mt-4 flex flex-col items-center gap-6 sm:flex-row sm:items-start">
       <Skeleton className="h-[180px] w-[180px] shrink-0 rounded-full" />
       <div className="w-full flex-1 space-y-3">
-        {Array.from({ length: 5 }).map((_, i) => (
+        {Array.from({ length: 9 }).map((_, i) => (
           <div key={i} className="flex items-center gap-2">
             <Skeleton className="h-3 w-3 rounded-full" />
             <Skeleton className="h-4 flex-1" />
@@ -93,9 +103,9 @@ export default function AgePieChart({
     <div className="rounded-2xl border border-[#e8eaed] bg-white p-5 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-base font-semibold text-zinc-800">
-          Kategori Umur Pasien
+          Kategori Pasien
         </h3>
-        <div className="flex rounded-full bg-zinc-100 p-1 text-xs font-medium">
+        <div className="flex flex-wrap justify-end rounded-full bg-zinc-100 p-1 text-xs font-medium">
           {KATEGORI_UMUR_PERIODE_OPTIONS.map((opt) => (
             <button
               key={opt.value}
