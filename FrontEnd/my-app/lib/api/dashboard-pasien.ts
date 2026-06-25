@@ -1,6 +1,8 @@
 import { apiGet, buildQuery } from "@/lib/api/http";
 import type { DrilldownTipe } from "@/lib/drilldown";
 import type {
+  BPJSPoliFilterParams,
+  BPJSPoliResponse,
   DaftarPasienResponse,
   DashboardPasienResponse,
   DiagnosaPeriode,
@@ -33,6 +35,18 @@ export function fetchDaftarPasien(params?: PasienFilterParams) {
       jenis_kelamin: params?.jenis_kelamin,
       status_lanjut: params?.status_lanjut,
       penjamin: params?.penjamin,
+      limit: params?.limit ?? 20,
+      offset: params?.offset ?? 0,
+    })}`,
+  );
+}
+
+export function fetchBPJSPoli(params?: BPJSPoliFilterParams) {
+  return apiGet<BPJSPoliResponse>(
+    `/api/dashboard/pasien/bpjs${buildQuery({
+      kd_poli: params?.kd_poli,
+      penjamin: params?.penjamin,
+      cari: params?.cari,
       limit: params?.limit ?? 20,
       offset: params?.offset ?? 0,
     })}`,

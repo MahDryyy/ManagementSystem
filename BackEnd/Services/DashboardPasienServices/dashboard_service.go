@@ -13,6 +13,8 @@ type DashboardService interface {
 	GetDaftarPasien(filter ModelsPasien.PasienFilter) (ModelsPasien.DaftarPasienResponse, error)
 	GetDrilldownPasien(filter ModelsPasien.PasienDrilldownFilter) (ModelsPasien.DaftarPasienResponse, error)
 	GetPasienDetail(noRkmMedis string) (ModelsPasien.PasienDetail, error)
+	GetBPJSPoliData(filter ModelsPasien.BPJSPoliFilter) (ModelsPasien.BPJSPoliResponse, error)
+	GetBPJSPoliDataCount(filter ModelsPasien.BPJSPoliFilter) (int, error)
 }
 
 type dashboardService struct {
@@ -92,4 +94,19 @@ func (s *dashboardService) GetDrilldownPasien(filter ModelsPasien.PasienDrilldow
 
 func (s *dashboardService) GetPasienDetail(noRkmMedis string) (ModelsPasien.PasienDetail, error) {
 	return s.repo.GetPasienDetail(noRkmMedis)
+}
+
+func (s *dashboardService) GetBPJSPoliData(filter ModelsPasien.BPJSPoliFilter) (ModelsPasien.BPJSPoliResponse, error) {
+	if filter.Limit <= 0 {
+		filter.Limit = 20
+	}
+	data, total, err := s.repo.GetBPJSPoliData(filter)
+	if err != nil {
+		return ModelsPasien.BPJSPoliResponse{}, err
+	}
+	return ModelsPasien.BPJSPoliResponse{Data: data, Total: total}, nil
+}
+
+func (s *dashboardService) GetBPJSPoliDataCount(filter ModelsPasien.BPJSPoliFilter) (int, error) {
+	return s.repo.GetBPJSPoliDataCount(filter)
 }

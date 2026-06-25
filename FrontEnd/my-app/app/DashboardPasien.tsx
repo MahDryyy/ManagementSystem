@@ -3,13 +3,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { Activity, Home, Users } from "lucide-react";
 import {
+  fetchBPJSPoli,
   fetchDaftarPasien,
   fetchDashboardPasien,
   fetchDiagnosaTerbanyak,
   fetchKategoriUmur,
 } from "@/lib/api/dashboard-pasien";
 import type {
+  BPJSPoliFilterParams,
   DashboardPasienResponse,
+  DataBPJS,
   DiagnosaPeriode,
   DiagnosaTerbanyakItem,
   KategoriUmurItem,
@@ -19,6 +22,7 @@ import type {
   RawatFilter,
 } from "@/lib/types/dashboard-pasien";
 import AgePieChart from "@/components/dashboard-pasien/AgePieChart";
+import BPJSPoliTable from "@/components/dashboard-pasien/BPJSPoliTable";
 import DiagnosaBarChart from "@/components/dashboard-pasien/DiagnosaBarChart";
 import PatientsTable from "@/components/dashboard-pasien/PatientsTable";
 import StatCard from "@/components/dashboard-pasien/StatCard";
@@ -31,6 +35,7 @@ import type { DrilldownModalConfig } from "@/lib/drilldown";
 import { periodeLabel } from "@/lib/drilldown";
 
 const DAFTAR_PAGE_SIZE = 20;
+const BPJS_PAGE_SIZE = 20;
 
 export default function DashboardPasien() {
   const [dashboard, setDashboard] = useState<DashboardPasienResponse | null>(
@@ -39,6 +44,9 @@ export default function DashboardPasien() {
   const [diagnosa, setDiagnosa] = useState<DiagnosaTerbanyakItem[]>([]);
   const [patients, setPatients] = useState<PasienBaris[]>([]);
   const [patientsTotal, setPatientsTotal] = useState(0);
+
+  const [bpjsData, setBpjsData] = useState<DataBPJS[]>([]);
+  const [bpjsTotal, setBpjsTotal] = useState(0);
 
   const [loading, setLoading] = useState(true);
   const [tableLoading, setTableLoading] = useState(false);
@@ -62,17 +70,27 @@ export default function DashboardPasien() {
   const [drilldown, setDrilldown] = useState<DrilldownModalConfig | null>(null);
   const [detailPasienId, setDetailPasienId] = useState<string | null>(null);
 
+  const [bpjsSearch, setBpjsSearch] = useState("");
+  const [debouncedBpjsSearch, setDebouncedBpjsSearch] = useState("");
+  const [bpjsKdPoli, setBpjsKdPoli] = useState("");
+  const [bpjsPenjamin, setBpjsPenjamin] = useState<PenjaminFilter>("");
+  const [bpjsLoading, setBpjsLoading] = useState(false);
+  const [bpjsLoadingMore, setBpjsLoadingMore] = useState(false);
+
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [data, daftar] = await Promise.all([
+      const [data, daftar, bpjs] = await Promise.all([
         fetchDashboardPasien({ limit: 20 }),
         fetchDaftarPasien({ limit: 20 }),
+        fetchBPJSPoli({ limit: BPJS_PAGE_SIZE }),
       ]);
       setDashboard(data);
       setPatients(daftar.data ?? []);
       setPatientsTotal(daftar.total);
+      setBpjsData(bpjs.data ?? []);
+      setBpjsTotal(bpjs.total);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Gagal memuat dashboard");
     } finally {
@@ -144,6 +162,44 @@ export default function DashboardPasien() {
     [],
   );
 
+  const loadBPJSPoli = useCallback(
+    async (params: BPJSPoliFilterParams, append = false) => {
+      if (append) setBpjsLoadingMore(true);
+      else setBpjsLoading(true);
+      try {
+        const res = await fetchBPJSPoli({
+          ...params,
+          limit: BPJS_PAGE_SIZE,
+        });
+        setBpjsTotal(res.total);
+        setBpjsData((prev) =>
+          append ? [...prev, ...(res.data ?? [])] : (res.data ?? []),
+        );
+      } catch {
+        if (!append) {
+          setBpjsData([]);
+          setBpjsTotal(0);
+        }
+      } finally {
+        setBpjsLoading(false);
+        setBpjsLoadingMore(false);
+      }
+    },
+    [],
+  );
+
+  const loadMoreBPJSPoli = useCallback(() => {
+    loadBPJSPoli(
+      {
+        kd_poli: bpjsKdPoli.trim() || undefined,
+        penjamin: bpjsPenjamin || undefined,
+        cari: debouncedBpjsSearch.trim() || undefined,
+        offset: bpjsData.length,
+      },
+      true,
+    );
+  }, [loadBPJSPoli, bpjsKdPoli, bpjsPenjamin, debouncedBpjsSearch, bpjsData.length]);
+
   const loadMorePatients = useCallback(() => {
     loadPatients(
       search,
@@ -187,6 +243,29 @@ export default function DashboardPasien() {
     }, 400);
     return () => clearTimeout(t);
   }, [search, filterGender, filterPenjamin, filterRawat, loadPatients, loading]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedBpjsSearch(bpjsSearch), 350);
+    return () => clearTimeout(t);
+  }, [bpjsSearch]);
+
+  useEffect(() => {
+    if (loading) return;
+    const t = setTimeout(() => {
+      loadBPJSPoli({
+        kd_poli: bpjsKdPoli.trim() || undefined,
+        penjamin: bpjsPenjamin || undefined,
+        cari: debouncedBpjsSearch.trim() || undefined,
+      });
+    }, 400);
+    return () => clearTimeout(t);
+  }, [
+    bpjsKdPoli,
+    bpjsPenjamin,
+    debouncedBpjsSearch,
+    loadBPJSPoli,
+    loading,
+  ]);
 
   if (loading) {
     return <DashboardPasienSkeleton />;
@@ -362,6 +441,23 @@ export default function DashboardPasien() {
           filterRawat={filterRawat}
           onFilterRawatChange={setFilterRawat}
           onRowClick={(row) => setDetailPasienId(row.id)}
+        />
+      </FadeIn>
+
+      <FadeIn delayMs={440} className="mt-6">
+        <BPJSPoliTable
+          rows={bpjsData}
+          total={bpjsTotal}
+          loading={bpjsLoading}
+          loadingMore={bpjsLoadingMore}
+          hasMore={bpjsData.length < bpjsTotal}
+          onLoadMore={loadMoreBPJSPoli}
+          search={bpjsSearch}
+          onSearchChange={setBpjsSearch}
+          kdPoli={bpjsKdPoli}
+          onKdPoliChange={setBpjsKdPoli}
+          filterPenjamin={bpjsPenjamin}
+          onFilterPenjaminChange={setBpjsPenjamin}
         />
       </FadeIn>
     </div>

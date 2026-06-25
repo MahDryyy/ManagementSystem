@@ -9,6 +9,27 @@ export type KategoriUmurItem = {
   jumlah: number;
 };
 
+export type DataBPJS = {
+  no_rawat: string;
+  no_rkm_medis: string;
+  nm_pasien: string;
+  tgl_registrasi: string;
+  jam_reg: string;
+  kd_dokter: string;
+  nm_dokter: string;
+  kd_poli: string;
+  nm_poli: string;
+  kd_pj: string;
+  nm_penjamin: string;
+  status_lanjut: string;
+  status_rawat: string;
+};
+
+export type BPJSPoliResponse = {
+  data: DataBPJS[];
+  total: number;
+};
+
 export type StatusPerawatan = {
   total_aktif: number;
   rawat_inap_aktif: number;
@@ -117,6 +138,14 @@ export type PasienFilterParams = {
   jenis_kelamin?: string;
   status_lanjut?: RawatFilter;
   penjamin?: PenjaminFilter;
+  limit?: number;
+  offset?: number;
+};
+
+export type BPJSPoliFilterParams = {
+  kd_poli?: string;
+  penjamin?: PenjaminFilter;
+  cari?: string;
   limit?: number;
   offset?: number;
 };

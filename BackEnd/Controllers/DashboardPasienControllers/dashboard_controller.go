@@ -111,6 +111,41 @@ func (ctrl *DashboardController) GetDrilldownPasien(c *gin.Context) {
 	c.JSON(http.StatusOK, data)
 }
 
+func (ctrl *DashboardController) GetBPJSPoli(c *gin.Context) {
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))
+
+	filter := ModelsPasien.BPJSPoliFilter{
+		KdPoli:   c.Query("kd_poli"),
+		Penjamin: c.Query("penjamin"),
+		Cari:     c.Query("cari"),
+		Limit:    limit,
+		Offset:   offset,
+	}
+
+	data, err := ctrl.svc.GetBPJSPoliData(filter)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, data)
+}
+
+func (ctrl *DashboardController) GetBPJSPoliCount(c *gin.Context) {
+	filter := ModelsPasien.BPJSPoliFilter{
+		KdPoli:   c.Query("kd_poli"),
+		Penjamin: c.Query("penjamin"),
+		Cari:     c.Query("cari"),
+	}
+
+	total, err := ctrl.svc.GetBPJSPoliDataCount(filter)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"total": total})
+}
+
 func parsePasienFilter(c *gin.Context) ModelsPasien.PasienFilter {
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
 	offset, _ := strconv.Atoi(c.DefaultQuery("offset", "0"))

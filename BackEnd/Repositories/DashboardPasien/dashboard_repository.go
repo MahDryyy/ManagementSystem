@@ -14,6 +14,8 @@ type DashboardRepository interface {
 	GetDaftarPasien(filter ModelsPasien.PasienFilter) ([]ModelsPasien.PasienBaris, int, error)
 	GetDrilldownPasien(filter ModelsPasien.PasienDrilldownFilter) ([]ModelsPasien.PasienBaris, int, error)
 	GetPasienDetail(noRkmMedis string) (ModelsPasien.PasienDetail, error)
+	GetBPJSPoliData(filter ModelsPasien.BPJSPoliFilter) ([]ModelsPasien.DataBPJS, int, error)
+	GetBPJSPoliDataCount(filter ModelsPasien.BPJSPoliFilter) (int, error)
 }
 
 type dashboardRepository struct {
@@ -103,11 +105,15 @@ func scanKategoriUmurRows(rows *sql.Rows) ([]ModelsPasien.KategoriUmurItem, erro
 	}
 
 	order := []string{
+		ModelsPasien.KategoriIbuHamil,
+		ModelsPasien.KategoriIbuBersalin,
 		ModelsPasien.KategoriUmurBayiBaruLahir,
 		ModelsPasien.KategoriUmurBalita,
 		ModelsPasien.KategoriUmurPendidikan,
 		ModelsPasien.KategoriUmurProduktif,
 		ModelsPasien.KategoriUmurLanjut,
+		ModelsPasien.KategoriDM,
+		ModelsPasien.KategoriHT,
 	}
 	result := make([]ModelsPasien.KategoriUmurItem, 0, len(order))
 	for _, k := range order {

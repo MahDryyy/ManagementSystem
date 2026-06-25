@@ -21,14 +21,34 @@ const (
 
 // Kategori umur untuk chart dashboard (dihitung dari tgl_lahir).
 const (
+	KategoriIbuHamil          = "Ibu Hamil"
+	KategoriIbuBersalin       = "Ibu Bersalin"
 	KategoriUmurBayiBaruLahir = "Bayi Baru Lahir 0–12 bulan"   // 0–12 bulan
 	KategoriUmurBalita        = "Balita 1–6 tahun"             // 1–6 tahun
 	KategoriUmurPendidikan    = "Usia Pendidikan 7–15 tahun"   // 7–15 tahun
 	KategoriUmurProduktif     = "Usia Produktif 16–64 tahun"   // 16–64 tahun
 	KategoriUmurLanjut        = "Usia Lanjut 65 tahun ke atas" // 65 tahun ke atas
+	KategoriDM                = "Diabetes Mellitus"
+	KategoriHT                = "Hipertensi"
 )
 
 // --- Entitas tabel SIMRS Khanza ---
+
+type DataBPJS struct {
+	No_rawat       string    `json:"no_rawat" db:"no_rawat"`
+	No_rkm_medis   string    `json:"no_rkm_medis" db:"no_rkm_medis"`
+	Nm_pasien      string    `json:"nm_pasien" db:"nm_pasien"`
+	Tgl_registrasi time.Time `json:"tgl_registrasi" db:"tgl_registrasi"`
+	Jam_reg        string    `json:"jam_reg" db:"jam_reg"`
+	Kd_dokter      string    `json:"kd_dokter" db:"kd_dokter"`
+	Nm_dokter      string    `json:"nm_dokter" db:"nm_dokter"`
+	Kd_poli        string    `json:"kd_poli" db:"kd_poli"`
+	Nm_poli        string    `json:"nm_poli" db:"nm_poli"`
+	Kd_pj          string    `json:"kd_pj" db:"kd_pj"`
+	Nm_penjamin    string    `json:"nm_penjamin" db:"nm_penjamin"`
+	Status_lanjut  string    `json:"status_lanjut" db:"status_lanjut"`
+	Status_rawat   string    `json:"status_rawat" db:"status_rawat"`
+}
 
 // Pasien memetakan tabel `pasien`.
 type Pasien struct {
@@ -100,16 +120,16 @@ type DashboardPasien struct {
 
 // PasienBaris satu baris tabel daftar pasien di dashboard.
 type PasienBaris struct {
-	ID           string    `json:"id"` // no_rkm_medis (kompatibilitas)
-	NoRkmMedis   string    `json:"no_rkm_medis"`
-	Nama         string    `json:"nama"`
-	NoTelepon    string    `json:"no_telepon"`
-	Diagnosa     string    `json:"diagnosa"`
-	TglLahir     time.Time `json:"tgl_lahir"`
-	Umur         int       `json:"umur"`          // tahun, dihitung saat query
-	JenisKelamin string    `json:"jenis_kelamin"` // Laki-laki | Perempuan (label UI)
-	Rawat        string    `json:"rawat"`         // Rawat Inap | Rawat Jalan
-	Penjamin     string    `json:"penjamin"`      // BPJS, Umum, dll. (png_jawab)
+	ID           string     `json:"id"` // no_rkm_medis (kompatibilitas)
+	NoRkmMedis   string     `json:"no_rkm_medis"`
+	Nama         string     `json:"nama"`
+	NoTelepon    string     `json:"no_telepon"`
+	Diagnosa     string     `json:"diagnosa"`
+	TglLahir     time.Time  `json:"tgl_lahir"`
+	Umur         int        `json:"umur"`              // tahun, dihitung saat query
+	JenisKelamin string     `json:"jenis_kelamin"`     // Laki-laki | Perempuan (label UI)
+	Rawat        string     `json:"rawat"`             // Rawat Inap | Rawat Jalan
+	Penjamin     string     `json:"penjamin"`          // BPJS, Umum, dll. (png_jawab)
 	Ruangan      string     `json:"ruangan,omitempty"` // bangsal · kamar (rawat inap aktif)
 	NoRawat      string     `json:"no_rawat,omitempty"`
 	TglMasuk     *time.Time `json:"tgl_masuk,omitempty"`  // registrasi / masuk kamar
@@ -188,6 +208,21 @@ type PasienFilter struct {
 	Offset       int    `json:"offset"`
 }
 
+// BPJSPoliFilter parameter untuk daftar pasien berdasarkan kd_poli.
+type BPJSPoliFilter struct {
+	KdPoli   string `json:"kd_poli"`  // kosong = semua poli
+	Penjamin string `json:"penjamin"` // kosong = semua penjamin; bpjs | umum
+	Cari     string `json:"cari"`     // nama, no_rkm_medis, atau nm_poli
+	Limit    int    `json:"limit"`
+	Offset   int    `json:"offset"`
+}
+
+// BPJSPoliResponse hasil daftar pasien BPJS per poli.
+type BPJSPoliResponse struct {
+	Data  []DataBPJS `json:"data"`
+	Total int        `json:"total"`
+}
+
 // DaftarPasienResponse hasil paginasi daftar pasien.
 type DaftarPasienResponse struct {
 	Data  []PasienBaris `json:"data"`
@@ -196,20 +231,20 @@ type DaftarPasienResponse struct {
 
 // Tipe drill-down (klik ringkasan / kategori umur / status perawatan).
 const (
-	DrilldownRingkasanTotal       = "ringkasan_total"
-	DrilldownRingkasanRalan       = "ringkasan_ralan"
-	DrilldownRingkasanRanap       = "ringkasan_ranap"
-	DrilldownKategoriUmur         = "kategori_umur"
-	DrilldownStatusJalanAktif     = "status_jalan_aktif"
-	DrilldownStatusInapAktif      = "status_inap_aktif"
-	DrilldownDiagnosa             = "diagnosa"
+	DrilldownRingkasanTotal   = "ringkasan_total"
+	DrilldownRingkasanRalan   = "ringkasan_ralan"
+	DrilldownRingkasanRanap   = "ringkasan_ranap"
+	DrilldownKategoriUmur     = "kategori_umur"
+	DrilldownStatusJalanAktif = "status_jalan_aktif"
+	DrilldownStatusInapAktif  = "status_inap_aktif"
+	DrilldownDiagnosa         = "diagnosa"
 )
 
 // PasienDrilldownFilter parameter daftar pasien saat kartu/chart diklik.
 type PasienDrilldownFilter struct {
 	Tipe       string `json:"tipe"`
 	Periode    string `json:"periode"`     // hari_ini | minggu_ini | bulan_ini | semua
-	Kategori   string `json:"kategori"`   // label kategori umur (untuk tipe kategori_umur)
+	Kategori   string `json:"kategori"`    // label kategori umur (untuk tipe kategori_umur)
 	KdPenyakit string `json:"kd_penyakit"` // kode penyakit (untuk tipe diagnosa)
 	Limit      int    `json:"limit"`
 	Offset     int    `json:"offset"`
