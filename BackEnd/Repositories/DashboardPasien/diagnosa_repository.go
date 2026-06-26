@@ -140,7 +140,7 @@ func normalizePeriode(periode string) string {
 		return ModelsPasien.PeriodeBulanIni
 	case "tahun_ini", "year", "annually", "annual":
 		return ModelsPasien.PeriodeTahunIni
-	case "semua", "all", "all_time", "":
+	case "semua", "semua_waktu", "all", "all_time", "":
 		return ModelsPasien.PeriodeSemuaWaktu
 	default:
 		return periode

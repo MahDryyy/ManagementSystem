@@ -92,6 +92,7 @@ func Setup(
 			// Pasien exports
 			laporan.GET("/pasien/csv", laporanCtrl.ExportPasienCSV)
 			laporan.GET("/pasien/ringkasan/csv", laporanCtrl.ExportPasienSummaryCSV)
+			laporan.GET("/pasien/excel", laporanCtrl.ExportPasienExcel)
 
 			obat := api.Group("/dashboard/obat")
 			{

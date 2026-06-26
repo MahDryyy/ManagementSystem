@@ -16,6 +16,7 @@ type DashboardRepository interface {
 	GetPasienDetail(noRkmMedis string) (ModelsPasien.PasienDetail, error)
 	GetBPJSPoliData(filter ModelsPasien.BPJSPoliFilter) ([]ModelsPasien.DataBPJS, int, error)
 	GetBPJSPoliDataCount(filter ModelsPasien.BPJSPoliFilter) (int, error)
+	GetSPMPasienData(periode string) ([]ModelsPasien.SPMPasienRow, error)
 }
 
 type dashboardRepository struct {
@@ -318,4 +319,222 @@ func labelStatusLanjut(status string) string {
 		return "Rawat Inap"
 	}
 	return "Rawat Jalan"
+}
+
+func (r *dashboardRepository) GetSPMPasienData(periode string) ([]ModelsPasien.SPMPasienRow, error) {
+	resolved, err := ResolvePeriode(periode)
+	if err != nil {
+		return nil, err
+	}
+	andClause, err := periodeRegistrasiAndClause(resolved)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the age category SQL and args
+	umurCaseSQL, umurArgs := kategoriUmurCaseSQL()
+
+	// First, let's get the base pasien data
+	var baseQuery string
+	var args []any
+
+	if andClause == "" {
+		baseQuery = `
+			SELECT DISTINCT
+				p.no_rkm_medis,
+				p.nm_pasien,
+				p.tgl_lahir,
+				IFNULL(cf.nama_cacat, ''),
+				IFNULL(p.no_ktp, ''),
+				p.jk,
+				IFNULL(p.kelurahanpj, ''),
+				IFNULL(p.kecamatanpj, ''),
+				'' AS keterangan,
+				IFNULL(p.nm_ibu, ''),
+				` + umurCaseSQL + ` AS umur_kategori
+			FROM pasien p
+			LEFT JOIN cacat_fisik cf ON p.cacat_fisik = cf.id
+			WHERE p.tgl_lahir IS NOT NULL AND p.tgl_lahir <> '0000-00-00'
+			ORDER BY p.nm_pasien ASC
+		`
+		args = append(args, umurArgs...)
+	} else {
+		baseQuery = `
+			SELECT DISTINCT
+				p.no_rkm_medis,
+				p.nm_pasien,
+				p.tgl_lahir,
+				IFNULL(cf.nama_cacat, ''),
+				IFNULL(p.no_ktp, ''),
+				p.jk,
+				IFNULL(p.kelurahanpj, ''),
+				IFNULL(p.kecamatanpj, ''),
+				'' AS keterangan,
+				IFNULL(p.nm_ibu, ''),
+				` + umurCaseSQL + ` AS umur_kategori
+			FROM reg_periksa rp
+			INNER JOIN pasien p ON rp.no_rkm_medis = p.no_rkm_medis
+			LEFT JOIN cacat_fisik cf ON p.cacat_fisik = cf.id
+			WHERE p.tgl_lahir IS NOT NULL AND p.tgl_lahir <> '0000-00-00'` + andClause + `
+			ORDER BY p.nm_pasien ASC
+		`
+		args = append(args, umurArgs...)
+	}
+
+	rows, err := r.db.Query(baseQuery, args...)
+	if err != nil {
+		return nil, fmt.Errorf("get base pasien data: %w", err)
+	}
+	defer rows.Close()
+
+	var list []ModelsPasien.SPMPasienRow
+
+	for rows.Next() {
+		var row ModelsPasien.SPMPasienRow
+		var noRkmMedis string
+		var jk string
+		var tglLahir sql.NullTime
+		var umurKategori sql.NullString
+
+		if err := rows.Scan(
+			&noRkmMedis,
+			&row.Nama,
+			&tglLahir,
+			&row.Disabilitas,
+			&row.NIK,
+			&jk,
+			&row.Desa,
+			&row.Kecamatan,
+			&row.Ket,
+			&row.NamaIbu,
+			&umurKategori,
+		); err != nil {
+			return nil, err
+		}
+
+		if tglLahir.Valid {
+			row.TglLahir = tglLahir.Time
+		}
+		row.JenisKelamin = labelJenisKelamin(jk)
+		row.UmurKategori = umurKategori.String
+
+		// Get real diagnosa from the database
+		diagnosaList, err := r.getDiagnosaPasien(noRkmMedis, resolved)
+		if err != nil {
+			return nil, err
+		}
+		row.Diagnosa = strings.Join(diagnosaList, ", ")
+
+		// Collect ALL categories this pasien belongs to
+		var categories []string
+		// First add the age category
+		if row.UmurKategori != "" {
+			categories = append(categories, row.UmurKategori)
+		}
+		// Then add any special categories they qualify for
+		for _, kat := range kategoriUmurDisplayOrder() {
+			if !isKategoriKhusus(kat) {
+				continue
+			}
+			isMatch, err := r.checkKategoriKhusus(noRkmMedis, kat, resolved)
+			if err != nil {
+				return nil, err
+			}
+			if isMatch {
+				categories = append(categories, kat)
+			}
+		}
+
+		// Add a row for each category
+		for _, cat := range categories {
+			newRow := row
+			newRow.Kategori = cat
+			list = append(list, newRow)
+		}
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if list == nil {
+		list = []ModelsPasien.SPMPasienRow{}
+	}
+	return list, nil
+}
+
+// Helper function to check if pasien qualifies for a special category
+func (r *dashboardRepository) checkKategoriKhusus(noRkmMedis string, kategori string, periode string) (bool, error) {
+	cond, err := kategoriKhususCondition(kategori)
+	if err != nil {
+		return false, err
+	}
+
+	andClause, err := periodeRegistrasiAndClause(periode)
+	if err != nil {
+		return false, err
+	}
+
+	query := `
+		SELECT COUNT(DISTINCT rp.no_rawat)
+		FROM reg_periksa rp
+		WHERE rp.no_rkm_medis = ?
+		` + andClause + ` AND ` + cond
+
+	var count int
+	if err := r.db.QueryRow(query, noRkmMedis).Scan(&count); err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
+// Helper function to get all diagnoses for a pasien
+func (r *dashboardRepository) getDiagnosaPasien(noRkmMedis string, periode string) ([]string, error) {
+	andClause, err := periodeRegistrasiAndClause(periode)
+	if err != nil {
+		return nil, err
+	}
+
+	var query string
+	var args []any
+
+	if andClause == "" {
+		query = `
+			SELECT DISTINCT peny.nm_penyakit
+			FROM diagnosa_pasien dp
+			INNER JOIN reg_periksa rp ON dp.no_rawat = rp.no_rawat
+			INNER JOIN penyakit peny ON dp.kd_penyakit = peny.kd_penyakit
+			WHERE rp.no_rkm_medis = ?
+			ORDER BY dp.prioritas
+		`
+		args = []any{noRkmMedis}
+	} else {
+		query = `
+			SELECT DISTINCT peny.nm_penyakit
+			FROM diagnosa_pasien dp
+			INNER JOIN reg_periksa rp ON dp.no_rawat = rp.no_rawat
+			INNER JOIN penyakit peny ON dp.kd_penyakit = peny.kd_penyakit
+			WHERE rp.no_rkm_medis = ?` + andClause + `
+			ORDER BY dp.prioritas
+		`
+		args = []any{noRkmMedis}
+	}
+
+	rows, err := r.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var diagnosaList []string
+	for rows.Next() {
+		var diagnosa string
+		if err := rows.Scan(&diagnosa); err != nil {
+			return nil, err
+		}
+		diagnosaList = append(diagnosaList, diagnosa)
+	}
+
+	return diagnosaList, rows.Err()
 }

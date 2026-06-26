@@ -50,6 +50,7 @@ interface ReportCard {
   endpoints?: {
     detail: string;
     ringkasan: string;
+    excel?: string;
   };
 }
 
@@ -79,6 +80,7 @@ const REPORT_CARDS: ReportCard[] = [
     endpoints: {
       detail: "/api/laporan/pasien/csv",
       ringkasan: "/api/laporan/pasien/ringkasan/csv",
+      excel: "/api/laporan/pasien/excel",
     },
   },
   {
@@ -221,6 +223,28 @@ export default function DashboardLaporan() {
         const ts = new Date().toISOString().slice(0, 10).replace(/-/g, "");
         const filename = `${mode === "ringkasan" ? "ringkasan" : "laporan"}_${card.key}_${selectedPeriode}_${ts}.csv`;
         await triggerDownload(buildDownloadUrl(path, params), filename);
+        setDownloadState((p) => ({ ...p, [stateKey]: "success" }));
+        setLastDownload(new Date().toLocaleTimeString("id-ID"));
+      } catch {
+        setDownloadState((p) => ({ ...p, [stateKey]: "error" }));
+      }
+    },
+    [selectedPeriode],
+  );
+
+  const handleDownloadExcel = useCallback(
+    async (card: ReportCard) => {
+      if (!card.available || !card.endpoints?.excel) return;
+      const stateKey = `${card.key}-excel`;
+      setDownloadState((p) => ({ ...p, [stateKey]: "loading" }));
+      try {
+        console.log("handleDownloadExcel called with periode:", selectedPeriode);
+        const params: Record<string, string> = { periode: selectedPeriode };
+        const url = buildDownloadUrl(card.endpoints.excel, params);
+        console.log("Downloading from URL:", url);
+        const ts = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+        const filename = `data_pasien_spm_${selectedPeriode}_${ts}.xlsx`;
+        await triggerDownload(url, filename);
         setDownloadState((p) => ({ ...p, [stateKey]: "success" }));
         setLastDownload(new Date().toLocaleTimeString("id-ID"));
       } catch {
@@ -375,13 +399,17 @@ export default function DashboardLaporan() {
               const Icon = card.icon;
               const isSelected = selectedTypes.has(card.key);
               const detailKey = `${card.key}-detail`;
-              const ringkasanKey = `${card.key}-ringkasan`;
-              const isDetailLoading = downloadState[detailKey] === "loading";
-              const isRingkasanLoading = downloadState[ringkasanKey] === "loading";
-              const isDetailSuccess = downloadState[detailKey] === "success";
-              const isRingkasanSuccess = downloadState[ringkasanKey] === "success";
-              const isDetailError = downloadState[detailKey] === "error";
-              const isRingkasanError = downloadState[ringkasanKey] === "error";
+                      const ringkasanKey = `${card.key}-ringkasan`;
+                      const excelKey = `${card.key}-excel`;
+                      const isDetailLoading = downloadState[detailKey] === "loading";
+                      const isRingkasanLoading = downloadState[ringkasanKey] === "loading";
+                      const isExcelLoading = downloadState[excelKey] === "loading";
+                      const isDetailSuccess = downloadState[detailKey] === "success";
+                      const isRingkasanSuccess = downloadState[ringkasanKey] === "success";
+                      const isExcelSuccess = downloadState[excelKey] === "success";
+                      const isDetailError = downloadState[detailKey] === "error";
+                      const isRingkasanError = downloadState[ringkasanKey] === "error";
+                      const isExcelError = downloadState[excelKey] === "error";
 
               return (
                 <div
@@ -497,6 +525,26 @@ export default function DashboardLaporan() {
                             variant="outline"
                             onClick={() => handleDownload(card, "ringkasan")}
                           />
+
+                          {/* Download Excel */}
+                          {card.endpoints?.excel && (
+                            <DownloadBtn
+                              id={`btn-excel-${card.key}`}
+                              label={
+                                isExcelSuccess
+                                  ? "Terunduh!"
+                                  : isExcelError
+                                  ? "Gagal"
+                                  : "Excel"
+                              }
+                              loading={isExcelLoading}
+                              success={isExcelSuccess}
+                              error={isExcelError}
+                              color={card.color}
+                              variant="outline"
+                              onClick={() => handleDownloadExcel(card)}
+                            />
+                          )}
 
                           {/* Download PDF for this card */}
                           <DownloadBtn

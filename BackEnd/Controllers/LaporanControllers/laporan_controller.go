@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/xuri/excelize/v2"
 )
 
 type LaporanController struct {
@@ -302,5 +303,90 @@ func periodeLabel(p string) string {
 		return "Semua Waktu"
 	default:
 		return p
+	}
+}
+
+func (ctrl *LaporanController) ExportPasienExcel(c *gin.Context) {
+	periode := c.Query("periode")
+	if periode == "" {
+		periode = "semua"
+	}
+	
+	data, err := ctrl.pasienSvc.GetSPMPasienData(periode)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Group data by Kategori (for sheet name)
+	groupedData := make(map[string][]ModelsPasien.SPMPasienRow)
+	for _, row := range data {
+		key := row.Kategori
+		if key == "" {
+			key = "Tidak Berkategori"
+		}
+		groupedData[key] = append(groupedData[key], row)
+	}
+
+	f := excelize.NewFile()
+	defaultSheet := "Sheet1"
+
+	// New headers including Diagnosa and Umur Kategori
+	headers := []string{"Nama", "Tanggal Lahir", "Disabilitas", "NIK", "Jenis Kelamin", "Desa", "Kecamatan", "Keterangan", "Umur Kategori", "Diagnosa", "Nama Ibu"}
+
+	// Iterate over each category and create sheet
+	sheetIndex := 0
+	for category, patients := range groupedData {
+		var sheetName string
+		if sheetIndex == 0 {
+			// Rename default sheet for first category
+			sheetName = category
+			f.SetSheetName(defaultSheet, sheetName)
+		} else {
+			// Create new sheet for subsequent categories
+			sheetName = category
+			_, err := f.NewSheet(sheetName)
+			if err != nil {
+				// Handle invalid sheet name by truncating or replacing
+				sheetName = fmt.Sprintf("Kategori %d", sheetIndex)
+				_, _ = f.NewSheet(sheetName)
+			}
+		}
+
+		// Write headers
+		for i, h := range headers {
+			cell, _ := excelize.CoordinatesToCellName(i+1, 1)
+			f.SetCellValue(sheetName, cell, h)
+		}
+
+		// Write data
+		for i, row := range patients {
+			rowNum := i + 2
+			f.SetCellValue(sheetName, fmt.Sprintf("A%d", rowNum), row.Nama)
+			if !row.TglLahir.IsZero() {
+				f.SetCellValue(sheetName, fmt.Sprintf("B%d", rowNum), row.TglLahir.Format("02-01-2006"))
+			} else {
+				f.SetCellValue(sheetName, fmt.Sprintf("B%d", rowNum), "")
+			}
+			f.SetCellValue(sheetName, fmt.Sprintf("C%d", rowNum), row.Disabilitas)
+			f.SetCellValue(sheetName, fmt.Sprintf("D%d", rowNum), row.NIK)
+			f.SetCellValue(sheetName, fmt.Sprintf("E%d", rowNum), row.JenisKelamin)
+			f.SetCellValue(sheetName, fmt.Sprintf("F%d", rowNum), row.Desa)
+			f.SetCellValue(sheetName, fmt.Sprintf("G%d", rowNum), row.Kecamatan)
+			f.SetCellValue(sheetName, fmt.Sprintf("H%d", rowNum), row.Ket)
+			f.SetCellValue(sheetName, fmt.Sprintf("I%d", rowNum), row.UmurKategori)
+			f.SetCellValue(sheetName, fmt.Sprintf("J%d", rowNum), row.Diagnosa)
+			f.SetCellValue(sheetName, fmt.Sprintf("K%d", rowNum), row.NamaIbu)
+		}
+
+		sheetIndex++
+	}
+
+	filename := fmt.Sprintf("data_pasien_spm_%s.xlsx", time.Now().Format("20060102_150405"))
+	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
+
+	if err := f.Write(c.Writer); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 }

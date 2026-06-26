@@ -15,6 +15,7 @@ type DashboardService interface {
 	GetPasienDetail(noRkmMedis string) (ModelsPasien.PasienDetail, error)
 	GetBPJSPoliData(filter ModelsPasien.BPJSPoliFilter) (ModelsPasien.BPJSPoliResponse, error)
 	GetBPJSPoliDataCount(filter ModelsPasien.BPJSPoliFilter) (int, error)
+	GetSPMPasienData(periode string) ([]ModelsPasien.SPMPasienRow, error)
 }
 
 type dashboardService struct {
@@ -109,4 +110,8 @@ func (s *dashboardService) GetBPJSPoliData(filter ModelsPasien.BPJSPoliFilter) (
 
 func (s *dashboardService) GetBPJSPoliDataCount(filter ModelsPasien.BPJSPoliFilter) (int, error) {
 	return s.repo.GetBPJSPoliDataCount(filter)
+}
+
+func (s *dashboardService) GetSPMPasienData(periode string) ([]ModelsPasien.SPMPasienRow, error) {
+	return s.repo.GetSPMPasienData(periode)
 }

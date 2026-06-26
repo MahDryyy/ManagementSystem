@@ -103,6 +103,22 @@ type KategoriUmurItem struct {
 	Jumlah   int    `json:"jumlah"`
 }
 
+// SPMPasienRow satu baris data pasien untuk export laporan SPM (per NIK).
+type SPMPasienRow struct {
+	Nama         string    `json:"nama"`
+	TglLahir     time.Time `json:"tgl_lahir"`
+	Disabilitas  string    `json:"disabilitas"`
+	NIK          string    `json:"nik"`
+	JenisKelamin string    `json:"jenis_kelamin"`
+	Desa         string    `json:"desa"`
+	Kecamatan    string    `json:"kecamatan"`
+	Ket          string    `json:"ket"`
+	Kategori     string    `json:"kategori"`      // For sheet name: special category or age category
+	UmurKategori string    `json:"umur_kategori"` // Always the actual age category
+	Diagnosa     string    `json:"diagnosa"`     // Special diagnosis if any (DM/HT/Ibu Hamil/Ibu Bersalin)
+	NamaIbu      string    `json:"nama_ibu"`
+}
+
 // StatusPerawatan kartu status perawatan aktif.
 type StatusPerawatan struct {
 	TotalAktif      int `json:"total_aktif"`
