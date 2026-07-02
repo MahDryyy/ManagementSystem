@@ -8,6 +8,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -149,6 +150,40 @@ func (ctrl *LaporanController) ExportKeuanganSummaryCSV(c *gin.Context) {
 
 	_ = w.Write([]string{})
 	_ = w.Write([]string{"GRAND TOTAL", formatRupiah(pendapatan.GrandTotal)})
+}
+
+// ExportLaporanBulananExcel generates the monthly cash/revenue/expense report
+// (KAS, PENDAPATAN, PENGELUARAN, statistik pasien per hari) matching the
+// "LAPORAN KEUANGAN (BINUS).xlsx" template layout.
+func (ctrl *LaporanController) ExportLaporanBulananExcel(c *gin.Context) {
+	now := time.Now()
+	bulan, err := strconv.Atoi(c.DefaultQuery("bulan", strconv.Itoa(int(now.Month()))))
+	if err != nil || bulan < 1 || bulan > 12 {
+		bulan = int(now.Month())
+	}
+	tahun, err := strconv.Atoi(c.DefaultQuery("tahun", strconv.Itoa(now.Year())))
+	if err != nil || tahun < 2000 || tahun > 2100 {
+		tahun = now.Year()
+	}
+
+	data, err := ctrl.keuanganSvc.GetLaporanBulanan(bulan, tahun)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	f, err := buildLaporanBulananExcel(data)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	filename := fmt.Sprintf("laporan_keuangan_%02d_%d.xlsx", bulan, tahun)
+	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
+	if err := f.Write(c.Writer); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
 }
 
 // ======================== LAPORAN PASIEN ========================

@@ -23,6 +23,7 @@ type KeuanganRepository interface {
 	GetKategoriPengeluaran() ([]ModelsKeuangan.KategoriPengeluaranItem, error)
 	GetRingkasanPendapatanLaborat() (ModelsKeuangan.RingkasanPendapatanLaborat, error)
 	GetGrafikPendapatanLaborat(periode string) ([]ModelsKeuangan.GrafikTitik, error)
+	GetLaporanBulanan(bulan, tahun int) (ModelsKeuangan.LaporanBulananResponse, error)
 }
 
 type keuanganRepository struct {

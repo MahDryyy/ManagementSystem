@@ -18,6 +18,7 @@ type KeuanganService interface {
 	GetKategoriPengeluaran() ([]ModelsKeuangan.KategoriPengeluaranItem, error)
 	GetRingkasanPendapatanLaborat() (ModelsKeuangan.RingkasanPendapatanLaborat, error)
 	GetGrafikPendapatanLaborat(periode string) ([]ModelsKeuangan.GrafikTitik, error)
+	GetLaporanBulanan(bulan, tahun int) (ModelsKeuangan.LaporanBulananResponse, error)
 }
 
 type keuanganService struct {
@@ -74,4 +75,8 @@ func (s *keuanganService) GetRingkasanPendapatanLaborat() (ModelsKeuangan.Ringka
 
 func (s *keuanganService) GetGrafikPendapatanLaborat(periode string) ([]ModelsKeuangan.GrafikTitik, error) {
 	return s.repo.GetGrafikPendapatanLaborat(periode)
+}
+
+func (s *keuanganService) GetLaporanBulanan(bulan, tahun int) (ModelsKeuangan.LaporanBulananResponse, error) {
+	return s.repo.GetLaporanBulanan(bulan, tahun)
 }

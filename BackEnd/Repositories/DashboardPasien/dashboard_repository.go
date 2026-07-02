@@ -385,9 +385,13 @@ func (r *dashboardRepository) GetSPMPasienData(periode string) ([]ModelsPasien.S
 	if err != nil {
 		return nil, fmt.Errorf("get base pasien data: %w", err)
 	}
-	defer rows.Close()
-
-	var list []ModelsPasien.SPMPasienRow
+	// Materialisasi baris dasar dulu lalu tutup cursor, supaya query batch di
+	// bawah tidak berebut koneksi dengan cursor yang masih terbuka.
+	type spmBaseRow struct {
+		row        ModelsPasien.SPMPasienRow
+		noRkmMedis string
+	}
+	var bases []spmBaseRow
 
 	for rows.Next() {
 		var row ModelsPasien.SPMPasienRow
@@ -409,6 +413,7 @@ func (r *dashboardRepository) GetSPMPasienData(periode string) ([]ModelsPasien.S
 			&row.NamaIbu,
 			&umurKategori,
 		); err != nil {
+			rows.Close()
 			return nil, err
 		}
 
@@ -418,12 +423,29 @@ func (r *dashboardRepository) GetSPMPasienData(periode string) ([]ModelsPasien.S
 		row.JenisKelamin = labelJenisKelamin(jk)
 		row.UmurKategori = umurKategori.String
 
-		// Get real diagnosa from the database
-		diagnosaList, err := r.getDiagnosaPasien(noRkmMedis, resolved)
-		if err != nil {
-			return nil, err
-		}
-		row.Diagnosa = strings.Join(diagnosaList, ", ")
+		bases = append(bases, spmBaseRow{row: row, noRkmMedis: noRkmMedis})
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, err
+	}
+	rows.Close()
+
+	// Anti N+1: ambil seluruh diagnosa & keanggotaan kategori khusus dalam
+	// segelintir query (bukan 5 query per pasien). Hasil identik & akurat.
+	diagnosaByPasien, err := r.batchDiagnosaByPasien(andClause)
+	if err != nil {
+		return nil, err
+	}
+	kategoriKhususSets, err := r.batchKategoriKhususSets(andClause)
+	if err != nil {
+		return nil, err
+	}
+
+	var list []ModelsPasien.SPMPasienRow
+	for _, b := range bases {
+		row := b.row
+		row.Diagnosa = diagnosaByPasien[b.noRkmMedis]
 
 		// Collect ALL categories this pasien belongs to
 		var categories []string
@@ -436,11 +458,7 @@ func (r *dashboardRepository) GetSPMPasienData(periode string) ([]ModelsPasien.S
 			if !isKategoriKhusus(kat) {
 				continue
 			}
-			isMatch, err := r.checkKategoriKhusus(noRkmMedis, kat, resolved)
-			if err != nil {
-				return nil, err
-			}
-			if isMatch {
+			if set := kategoriKhususSets[kat]; set != nil && set[b.noRkmMedis] {
 				categories = append(categories, kat)
 			}
 		}
@@ -453,88 +471,94 @@ func (r *dashboardRepository) GetSPMPasienData(periode string) ([]ModelsPasien.S
 		}
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
 	if list == nil {
 		list = []ModelsPasien.SPMPasienRow{}
 	}
 	return list, nil
 }
 
-// Helper function to check if pasien qualifies for a special category
-func (r *dashboardRepository) checkKategoriKhusus(noRkmMedis string, kategori string, periode string) (bool, error) {
-	cond, err := kategoriKhususCondition(kategori)
-	if err != nil {
-		return false, err
-	}
-
-	andClause, err := periodeRegistrasiAndClause(periode)
-	if err != nil {
-		return false, err
-	}
-
+// batchDiagnosaByPasien mengambil daftar diagnosa untuk SEMUA pasien dalam
+// periode sekaligus (1 query) — pengganti getDiagnosaPasien yang dulu ditembak
+// per pasien (N+1). Hasil: map no_rkm_medis -> "Penyakit A, Penyakit B"
+// terurut prioritas, sama persis dengan versi lama.
+func (r *dashboardRepository) batchDiagnosaByPasien(andClause string) (map[string]string, error) {
 	query := `
-		SELECT COUNT(DISTINCT rp.no_rawat)
-		FROM reg_periksa rp
-		WHERE rp.no_rkm_medis = ?
-		` + andClause + ` AND ` + cond
+		SELECT rp.no_rkm_medis, peny.nm_penyakit, MIN(dp.prioritas) AS prio
+		FROM diagnosa_pasien dp
+		INNER JOIN reg_periksa rp ON dp.no_rawat = rp.no_rawat
+		INNER JOIN penyakit peny ON dp.kd_penyakit = peny.kd_penyakit
+		WHERE 1=1` + andClause + `
+		GROUP BY rp.no_rkm_medis, peny.nm_penyakit
+		ORDER BY rp.no_rkm_medis, prio`
 
-	var count int
-	if err := r.db.QueryRow(query, noRkmMedis).Scan(&count); err != nil {
-		return false, err
-	}
-
-	return count > 0, nil
-}
-
-// Helper function to get all diagnoses for a pasien
-func (r *dashboardRepository) getDiagnosaPasien(noRkmMedis string, periode string) ([]string, error) {
-	andClause, err := periodeRegistrasiAndClause(periode)
+	rows, err := r.db.Query(query)
 	if err != nil {
-		return nil, err
-	}
-
-	var query string
-	var args []any
-
-	if andClause == "" {
-		query = `
-			SELECT DISTINCT peny.nm_penyakit
-			FROM diagnosa_pasien dp
-			INNER JOIN reg_periksa rp ON dp.no_rawat = rp.no_rawat
-			INNER JOIN penyakit peny ON dp.kd_penyakit = peny.kd_penyakit
-			WHERE rp.no_rkm_medis = ?
-			ORDER BY dp.prioritas
-		`
-		args = []any{noRkmMedis}
-	} else {
-		query = `
-			SELECT DISTINCT peny.nm_penyakit
-			FROM diagnosa_pasien dp
-			INNER JOIN reg_periksa rp ON dp.no_rawat = rp.no_rawat
-			INNER JOIN penyakit peny ON dp.kd_penyakit = peny.kd_penyakit
-			WHERE rp.no_rkm_medis = ?` + andClause + `
-			ORDER BY dp.prioritas
-		`
-		args = []any{noRkmMedis}
-	}
-
-	rows, err := r.db.Query(query, args...)
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("batch diagnosa pasien: %w", err)
 	}
 	defer rows.Close()
 
-	var diagnosaList []string
+	ordered := map[string][]string{}
 	for rows.Next() {
-		var diagnosa string
-		if err := rows.Scan(&diagnosa); err != nil {
+		var noRkmMedis, nmPenyakit string
+		var prio sql.NullInt64
+		if err := rows.Scan(&noRkmMedis, &nmPenyakit, &prio); err != nil {
 			return nil, err
 		}
-		diagnosaList = append(diagnosaList, diagnosa)
+		ordered[noRkmMedis] = append(ordered[noRkmMedis], nmPenyakit)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
-	return diagnosaList, rows.Err()
+	out := make(map[string]string, len(ordered))
+	for noRkmMedis, names := range ordered {
+		out[noRkmMedis] = strings.Join(names, ", ")
+	}
+	return out, nil
+}
+
+// batchKategoriKhususSets mengembalikan, per kategori khusus, himpunan
+// no_rkm_medis yang memenuhi syarat dalam periode (1 query per kategori = 4
+// query tetap, tidak tergantung jumlah pasien) — pengganti checkKategoriKhusus
+// yang dulu ditembak per pasien per kategori (N×4).
+func (r *dashboardRepository) batchKategoriKhususSets(andClause string) (map[string]map[string]bool, error) {
+	out := map[string]map[string]bool{}
+
+	for _, kat := range kategoriUmurDisplayOrder() {
+		if !isKategoriKhusus(kat) {
+			continue
+		}
+		cond, err := kategoriKhususCondition(kat)
+		if err != nil {
+			return nil, err
+		}
+
+		query := `
+			SELECT DISTINCT rp.no_rkm_medis
+			FROM reg_periksa rp
+			WHERE ` + cond + andClause
+
+		rows, err := r.db.Query(query)
+		if err != nil {
+			return nil, fmt.Errorf("batch kategori %s: %w", kat, err)
+		}
+
+		set := map[string]bool{}
+		for rows.Next() {
+			var noRkmMedis string
+			if err := rows.Scan(&noRkmMedis); err != nil {
+				rows.Close()
+				return nil, err
+			}
+			set[noRkmMedis] = true
+		}
+		if err := rows.Err(); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		rows.Close()
+		out[kat] = set
+	}
+
+	return out, nil
 }

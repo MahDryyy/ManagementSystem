@@ -28,6 +28,7 @@ import type {
   RingkasanPendapatanLaborat,
   TotalPerAkun,
 } from "@/lib/types/dashboard-keuangan";
+import DownloadLaporanBulanan from "@/components/dashboard-keuangan/DownloadLaporanBulanan";
 import HistoriList from "@/components/dashboard-keuangan/HistoriList";
 import HistoriPengeluaranTable from "@/components/dashboard-keuangan/HistoriPengeluaranTable";
 import KeuanganTotalChart from "@/components/dashboard-keuangan/KeuanganTotalChart";
@@ -389,13 +390,16 @@ export default function DashboardKeuangan() {
 
   return (
     <div className="min-h-0 flex-1 overflow-y-auto bg-zinc-50 p-4 sm:p-6 lg:p-8">
-      <FadeIn className="mb-6">
-        <h2 className="text-xl font-bold text-zinc-900 sm:text-2xl">
-          Dashboard Keuangan
-        </h2>
-        <p className="mt-1 text-sm text-zinc-500">
-          Arahkan kursor ke grafik untuk melihat nominal per titik.
-        </p>
+      <FadeIn className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-zinc-900 sm:text-2xl">
+            Dashboard Keuangan
+          </h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            Arahkan kursor ke grafik untuk melihat nominal per titik.
+          </p>
+        </div>
+        <DownloadLaporanBulanan />
       </FadeIn>
 
       <div className="grid gap-4 lg:grid-cols-2">

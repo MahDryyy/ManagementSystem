@@ -89,6 +89,7 @@ func Setup(
 			// Keuangan exports
 			laporan.GET("/keuangan/csv", laporanCtrl.ExportKeuanganCSV)
 			laporan.GET("/keuangan/ringkasan/csv", laporanCtrl.ExportKeuanganSummaryCSV)
+			laporan.GET("/keuangan/laporan-bulanan/excel", laporanCtrl.ExportLaporanBulananExcel)
 			// Pasien exports
 			laporan.GET("/pasien/csv", laporanCtrl.ExportPasienCSV)
 			laporan.GET("/pasien/ringkasan/csv", laporanCtrl.ExportPasienSummaryCSV)
