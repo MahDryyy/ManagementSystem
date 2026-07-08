@@ -11,7 +11,6 @@ import SettingsPage from "@/components/settings/SettingsPage";
 import Sidebar from "@/components/Sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { DEFAULT_ROUTE, type AppRoute } from "@/lib/routes";
-import DashboardWebsiteWrapper from "./DashboardWebsiteWrapper";
 
 const LG_BREAKPOINT = 1024;
 
@@ -127,7 +126,6 @@ export default function AppShell() {
     if (activeRoute === "dashboard-keuangan") return <DashboardKeuangan />;
     if (activeRoute === "dashboard-laporan") return <DashboardLaporan />;
     if (activeRoute === "dashboard-obat") return <DashboardObat />;
-    if (activeRoute === "dashboard-website") return <DashboardWebsiteWrapper />;
     if (activeRoute === "settings") return <SettingsPage />;
     return <PlaceholderPage title={routeTitles[activeRoute]} />;
   };
