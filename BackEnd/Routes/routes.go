@@ -56,8 +56,8 @@ func Setup(
 			pasien.GET("/kategori-umur", dashboardCtrl.GetKategoriUmur)
 			pasien.GET("/status-perawatan", dashboardCtrl.GetStatusPerawatan)
 			pasien.GET("/daftar", dashboardCtrl.GetDaftarPasien)
-			pasien.GET("/bpjs", dashboardCtrl.GetBPJSPoli)			
-			pasien.GET("/bpjs/count", dashboardCtrl.GetBPJSPoliCount)	
+			pasien.GET("/bpjs", dashboardCtrl.GetBPJSPoli)
+			pasien.GET("/bpjs/count", dashboardCtrl.GetBPJSPoliCount)
 			pasien.GET("/drilldown", dashboardCtrl.GetDrilldownPasien)
 			pasien.GET("/:no_rkm_medis", dashboardCtrl.GetPasienDetail)
 		}
@@ -94,11 +94,11 @@ func Setup(
 			laporan.GET("/pasien/csv", laporanCtrl.ExportPasienCSV)
 			laporan.GET("/pasien/ringkasan/csv", laporanCtrl.ExportPasienSummaryCSV)
 			laporan.GET("/pasien/excel", laporanCtrl.ExportPasienExcel)
+		}
 
-			obat := api.Group("/dashboard/obat")
-			{
-				obat.GET("", dashboardObatCtrl.GetDashboard)
-			}
+		obat := api.Group("/dashboard/obat")
+		{
+			obat.GET("", dashboardObatCtrl.GetDashboard)
 		}
 	}
 }

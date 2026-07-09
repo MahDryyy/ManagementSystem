@@ -6,7 +6,7 @@ import (
 )
 
 type DashboardObatService interface {
-	GetDashboard() (ModelsObat.DashboardResponse, error)
+	GetDashboard(key ModelsObat.DashboardCacheKey) (ModelsObat.DashboardResponse, error)
 }
 
 type dashboardObatService struct {
@@ -17,6 +17,6 @@ func NewDashboardObatService(repo repositories.DashboardObatRepository) Dashboar
 	return &dashboardObatService{repo: repo}
 }
 
-func (s *dashboardObatService) GetDashboard() (ModelsObat.DashboardResponse, error) {
-	return s.repo.GetDashboard()
+func (s *dashboardObatService) GetDashboard(key ModelsObat.DashboardCacheKey) (ModelsObat.DashboardResponse, error) {
+	return s.repo.GetDashboard(key)
 }
