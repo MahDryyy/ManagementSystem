@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import DashboardKeuangan from "@/app/DashboardKeuangan";
 import DashboardObat from "@/app/DashboardObat";
+import DashboardOverview from "@/app/DashboardOverview";
 import DashboardPasien from "@/app/DashboardPasien";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardLaporan from "@/components/dashboard-laporan/DashboardLaporan";
@@ -122,6 +123,7 @@ export default function AppShell() {
     : false;
 
   const renderMain = () => {
+    if (activeRoute === "dashboard") return <DashboardOverview />;
     if (activeRoute === "dashboard-pasien") return <DashboardPasien />;
     if (activeRoute === "dashboard-keuangan") return <DashboardKeuangan />;
     if (activeRoute === "dashboard-laporan") return <DashboardLaporan />;

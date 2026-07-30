@@ -24,7 +24,7 @@ type NavItem = {
 };
 
 export const mainNavItems: NavItem[] = [
-  { label: "Dashboard", route: "dashboard", icon: LayoutGrid, badge: 12 },
+  { label: "Dashboard", route: "dashboard", icon: LayoutGrid, badge: 3 },
   { label: "Dashboard Pasien", route: "dashboard-pasien", icon: FileText },
   { label: "Dashboard Obat", route: "dashboard-obat", icon: MessageCircle },
   { label: "Dashboard Website", route: "dashboard-website", icon: Users },
