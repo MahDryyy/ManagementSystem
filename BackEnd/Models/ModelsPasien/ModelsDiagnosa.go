@@ -1,6 +1,5 @@
 package ModelsPasien
 
-
 const (
 	PeriodeHariIni    = "hari_ini"
 	PeriodeMingguIni  = "minggu_ini"
@@ -9,13 +8,11 @@ const (
 	PeriodeSemuaWaktu = "semua"
 )
 
-
 type DiagnosaTerbanyakFilter struct {
 	Periode string `json:"periode"`
 	Limit   int    `json:"limit"`
 	Cari    string `json:"cari"` // kd_penyakit atau nama_penyakit
 }
-
 
 type DiagnosaTerbanyakItem struct {
 	KdPenyakit   string  `json:"kd_penyakit"`
@@ -24,9 +21,8 @@ type DiagnosaTerbanyakItem struct {
 	Persentase   float64 `json:"persentase"`
 }
 
-
 type DiagnosaTerbanyakResponse struct {
-	Periode string                `json:"periode"`
-	Total   int                   `json:"total"`
+	Periode string                  `json:"periode"`
+	Total   int                     `json:"total"`
 	Data    []DiagnosaTerbanyakItem `json:"data"`
 }

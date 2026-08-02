@@ -115,7 +115,7 @@ type SPMPasienRow struct {
 	Ket          string    `json:"ket"`
 	Kategori     string    `json:"kategori"`      // For sheet name: special category or age category
 	UmurKategori string    `json:"umur_kategori"` // Always the actual age category
-	Diagnosa     string    `json:"diagnosa"`     // Special diagnosis if any (DM/HT/Ibu Hamil/Ibu Bersalin)
+	Diagnosa     string    `json:"diagnosa"`      // Special diagnosis if any (DM/HT/Ibu Hamil/Ibu Bersalin)
 	NamaIbu      string    `json:"nama_ibu"`
 }
 

@@ -2,9 +2,9 @@ package controllers
 
 import (
 	ModelsKeuangan "BackEnd/Models/ModelsKeuangan"
-	servicesKeuangan "BackEnd/Services/KeuanganServices"
-	servicesDashboardPasien "BackEnd/Services/DashboardPasienServices"
 	ModelsPasien "BackEnd/Models/ModelsPasien"
+	servicesDashboardPasien "BackEnd/Services/DashboardPasienServices"
+	servicesKeuangan "BackEnd/Services/KeuanganServices"
 	"encoding/csv"
 	"fmt"
 	"net/http"
@@ -191,7 +191,7 @@ func (ctrl *LaporanController) ExportLaporanBulananExcel(c *gin.Context) {
 // ExportPasienCSV generates a CSV export of patient visit data.
 func (ctrl *LaporanController) ExportPasienCSV(c *gin.Context) {
 	statusLanjut := c.Query("status_lanjut") // Ralan | Ranap | ""
-	penjamin := c.Query("penjamin")           // bpjs | umum | ""
+	penjamin := c.Query("penjamin")          // bpjs | umum | ""
 
 	filter := ModelsPasien.PasienFilter{
 		StatusLanjut: statusLanjut,
@@ -346,7 +346,7 @@ func (ctrl *LaporanController) ExportPasienExcel(c *gin.Context) {
 	if periode == "" {
 		periode = "semua"
 	}
-	
+
 	data, err := ctrl.pasienSvc.GetSPMPasienData(periode)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

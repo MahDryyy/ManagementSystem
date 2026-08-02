@@ -1,0 +1,98 @@
+name: ManagementSystem CD
+
+on:
+  workflow_run:
+    workflows:
+      - "ManagementSystem CI"
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: managementsystem-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Ubuntu Server
+
+    environment: ManagementSystem
+
+    if: >
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'production'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Connect Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          authkey: ${{ secrets.TS_AUTHKEY }}
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          #passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          port: ${{ secrets.PORT }}
+          timeout: 60s
+          command_timeout: 30m
+          envs: DOCKER_USERNAME
+
+          script: |
+            set -e
+
+            echo "===== DEPLOY START ====="
+
+            echo "User : $(whoami)"
+            echo "Host : $(hostname)"
+
+            cd ${{ secrets.PROJECT_PATH }}
+
+            echo "Current Directory:"
+            pwd
+
+            echo "Checkout Branch"
+            git checkout ${{ github.event.workflow_run.head_branch }}
+
+            echo "Pull Latest Source"
+            git pull origin ${{ github.event.workflow_run.head_branch }}
+
+            echo "Pull Docker Images"
+            docker compose pull
+
+            echo "Start Containers"
+            docker compose up -d --remove-orphans
+
+            echo "Health Check"
+
+            for i in $(seq 1 10); do
+              if curl -fs http://localhost:8080/api/health >/dev/null; then
+                echo "Backend Healthy"
+                break
+              fi
+
+              if [ "$i" -eq 10 ]; then
+                echo "Health Check Failed"
+                docker compose logs --tail=100 backend
+                exit 1
+              fi
+
+              sleep 3
+            done
+
+            echo "Running Containers"
+            docker ps
+
+            echo "Clean Unused Images"
+            docker image prune -f
+
+            echo "===== DEPLOY SUCCESS ====="
+
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}

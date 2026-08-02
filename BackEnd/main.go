@@ -10,6 +10,7 @@ import (
 	controllersDashboardObat "BackEnd/Controllers/DashboardObatControllers"
 	controllersDashboardPasien "BackEnd/Controllers/DashboardPasienControllers"
 	controllersLaporan "BackEnd/Controllers/LaporanControllers"
+	controllersWeb "BackEnd/Controllers/webcontroller"
 	db "BackEnd/Database"
 	repositories "BackEnd/Repositories"
 	repositoriesDashboardKeuangan "BackEnd/Repositories/DashboardKeuangan"
@@ -20,6 +21,7 @@ import (
 	servicesDashboardObat "BackEnd/Services/DashboardObatServices"
 	servicesDashboardPasien "BackEnd/Services/DashboardPasienServices"
 	servicesKeuangan "BackEnd/Services/KeuanganServices"
+	servicesWebsite "BackEnd/Services/website"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -60,8 +62,10 @@ func main() {
 	dashboardObatSvc := servicesDashboardObat.NewDashboardObatService(dashboardObatRepo)
 	dashboardObatCtrl := controllersDashboardObat.NewDashboardObatController(dashboardObatSvc)
 
+	webCtrl := controllersWeb.NewWebController(servicesWebsite.NewWebService())
+
 	router := gin.Default()
-	routes.Setup(router, authCtrl, adminCtrl, dashboardCtrl, keuanganCtrl, diagnosaCtrl, laporanCtrl, dashboardObatCtrl)
+	routes.Setup(router, authCtrl, adminCtrl, dashboardCtrl, keuanganCtrl, diagnosaCtrl, laporanCtrl, dashboardObatCtrl, webCtrl)
 
 	port := os.Getenv("PORT")
 	if port == "" {

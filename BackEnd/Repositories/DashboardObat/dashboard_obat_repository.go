@@ -223,7 +223,7 @@ func (r *dashboardObatRepository) GetDashboard(key ModelsObat.DashboardCacheKey)
 
 		for rows.Next() {
 			var (
-				item ModelsObat.DashboardStockMovement
+				item          ModelsObat.DashboardStockMovement
 				masuk, keluar float64
 			)
 			if err := rows.Scan(&item.Month, &masuk, &keluar); err != nil {

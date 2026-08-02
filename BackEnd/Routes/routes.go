@@ -6,7 +6,8 @@ import (
 	controllersDashboardObat "BackEnd/Controllers/DashboardObatControllers"
 	controllersDashboardPasien "BackEnd/Controllers/DashboardPasienControllers"
 	controllersLaporan "BackEnd/Controllers/LaporanControllers"
-	cors "BackEnd/Middleware"
+	controllersWeb "BackEnd/Controllers/webcontroller"
+	middleware "BackEnd/Middleware"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -21,21 +22,26 @@ func Setup(
 	diagnosaCtrl *controllersDashboardPasien.DiagnosaController,
 	laporanCtrl *controllersLaporan.LaporanController,
 	dashboardObatCtrl *controllersDashboardObat.DashboardObatController,
+	webCtrl *controllersWeb.WebController,
+
 ) {
-	router.Use(cors.CorsMiddleware())
+	router.Use(middleware.CorsMiddleware())
+	router.Use(middleware.SecurityHeaders())
+	router.Use(middleware.RateLimiter())
 
 	router.GET("/api/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+
 	})
 
 	auth := router.Group("/api/auth")
 	{
 		auth.POST("/login", authCtrl.Login)
-		auth.GET("/me", cors.AuthRequired(), authCtrl.Me)
-		auth.GET("/dashboard-keys", cors.AuthRequired(), authCtrl.DashboardKeys)
+		auth.GET("/me", middleware.AuthRequired(), authCtrl.Me)
+		auth.GET("/dashboard-keys", middleware.AuthRequired(), authCtrl.DashboardKeys)
 	}
 
-	admin := router.Group("/api/admin", cors.AuthRequired(), cors.SuperadminRequired())
+	admin := router.Group("/api/admin", middleware.AuthRequired(), middleware.SuperadminRequired())
 	{
 		admin.GET("/roles", adminCtrl.ListRoles)
 		admin.POST("/roles", adminCtrl.CreateRole)
@@ -47,7 +53,7 @@ func Setup(
 		admin.DELETE("/users/:id", adminCtrl.DeleteUser)
 	}
 
-	api := router.Group("/api", cors.AuthRequired())
+	api := router.Group("/api", middleware.AuthRequired())
 	{
 		pasien := api.Group("/dashboard/pasien")
 		{
@@ -100,5 +106,18 @@ func Setup(
 		{
 			obat.GET("", dashboardObatCtrl.GetDashboard)
 		}
+	}
+
+	web := router.Group("/api/web")
+	{
+		web.GET("/review", webCtrl.GetReview)
+		web.GET("/sosmed", webCtrl.GetSosmedStat)
+		web.GET("/sosmed/engagement", webCtrl.GetSosmedEngagement)
+		web.GET("/visitor", webCtrl.GetWebVisitor)
+		web.GET("/social-clicks", webCtrl.GetWebSocialClick)
+		web.GET("/visitor-sessions", webCtrl.GetWebVisitorSesion)
+		web.GET("/tiktok", webCtrl.GetTiktokStat)
+		web.GET("/tiktok/hit-stats", webCtrl.GetTiktokHitStat)
+
 	}
 }

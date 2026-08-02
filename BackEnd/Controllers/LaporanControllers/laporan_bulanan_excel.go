@@ -50,8 +50,8 @@ func buildLaporanBulananExcel(data ModelsKeuangan.LaporanBulananResponse) (*exce
 	labelStyle, _ := f.NewStyle(&excelize.Style{
 		Font: &excelize.Font{Size: 10},
 	})
-	dataStyle, _ := f.NewStyle(&excelize.Style{NumFmt: 3})  // #,##0
-	intStyle, _ := f.NewStyle(&excelize.Style{NumFmt: 1})   // 0
+	dataStyle, _ := f.NewStyle(&excelize.Style{NumFmt: 3}) // #,##0
+	intStyle, _ := f.NewStyle(&excelize.Style{NumFmt: 1})  // 0
 	totalValStyle, _ := f.NewStyle(&excelize.Style{
 		Font:   &excelize.Font{Bold: true},
 		Fill:   excelize.Fill{Type: "pattern", Color: []string{"#FCE4D6"}, Pattern: 1},

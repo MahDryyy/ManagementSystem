@@ -81,7 +81,7 @@ func (r *dashboardRepository) queryKategoriUmurAgeCounts(periode string) (map[st
 	if err != nil {
 		return nil, err
 	}
-	
+
 	caseSQL, args := kategoriUmurCaseSQL()
 	caseSQL += ` AS kategori`
 

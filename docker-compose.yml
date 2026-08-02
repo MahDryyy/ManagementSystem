@@ -1,28 +1,8 @@
 name: management-system
 
 services:
-  db:
-    image: mariadb:10.11
-    container_name: management-db
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: sik
-      MYSQL_USER: app_user
-      MYSQL_PASSWORD: app_password
-    ports:
-      - "3306:3306"
-    volumes:
-      - db_data:/var/lib/mysql
-      - ./BackEnd/migrations:/docker-entrypoint-initdb.d:ro
-    healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 30s
-
   backend:
+    image: ${DOCKER_USERNAME:-local}/managementsystem-backend:latest
     build:
       context: ./BackEnd
       dockerfile: dockerfile
@@ -32,28 +12,32 @@ services:
       - "8080:8080"
     environment:
       PORT: "8080"
-      DB_HOST: db
+      DB_HOST: mysql-klinik
       DB_PORT: "3306"
-      DB_USER: app_user
-      DB_PASS: app_password
-      DB_NAME: sik
-      JWT_SECRET: change-me-in-production
-    depends_on:
-      db:
-        condition: service_healthy
+      DB_USER: ${MYSQL_USER}
+      DB_PASS: ${MYSQL_PASSWORD}
+      DB_NAME: ${MYSQL_DATABASE}
+      JWT_SECRET: ${JWT_SECRET}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS}
+    networks:
+      - klinik-network
 
   frontend:
+    image: ${DOCKER_USERNAME:-local}/managementsystem-frontend:latest
     build:
       context: ./FrontEnd/my-app
       dockerfile: dockerfile
       args:
-        NEXT_PUBLIC_API_URL: http://localhost:8080
+        NEXT_PUBLIC_API_URL: "https://api-manajemen.kriampelgading.my.id"
     container_name: management-frontend
     restart: unless-stopped
     ports:
-      - "3000:80"
+      - "3001:3000"
     depends_on:
       - backend
+    networks:
+      - klinik-network
 
-volumes:
-  db_data:
+networks:
+  klinik-network:
+    external: true

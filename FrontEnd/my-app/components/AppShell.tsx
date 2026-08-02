@@ -5,6 +5,7 @@ import DashboardKeuangan from "@/app/DashboardKeuangan";
 import DashboardObat from "@/app/DashboardObat";
 import DashboardOverview from "@/app/DashboardOverview";
 import DashboardPasien from "@/app/DashboardPasien";
+import DashboardWebsite from "@/app/DashboardWebsite";
 import DashboardHeader from "@/components/DashboardHeader";
 import DashboardLaporan from "@/components/dashboard-laporan/DashboardLaporan";
 import LoginPage from "@/components/LoginPage";
@@ -128,6 +129,7 @@ export default function AppShell() {
     if (activeRoute === "dashboard-keuangan") return <DashboardKeuangan />;
     if (activeRoute === "dashboard-laporan") return <DashboardLaporan />;
     if (activeRoute === "dashboard-obat") return <DashboardObat />;
+    if (activeRoute === "dashboard-website") return <DashboardWebsite />;
     if (activeRoute === "settings") return <SettingsPage />;
     return <PlaceholderPage title={routeTitles[activeRoute]} />;
   };

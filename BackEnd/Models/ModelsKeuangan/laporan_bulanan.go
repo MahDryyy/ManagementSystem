@@ -68,13 +68,13 @@ var LaporanBulananStatistikRows = []string{
 // (misal KAPITASI BPJS, SETOR OWNER) tetap ada sebagai key dengan nilai nol,
 // supaya struktur template tetap utuh dan bisa diisi manual oleh user.
 type LaporanBulananResponse struct {
-	Bulan      int                `json:"bulan"`
-	Tahun      int                `json:"tahun"`
-	JumlahHari int                `json:"jumlah_hari"`
-	Pendapatan map[string][]float64 `json:"pendapatan"`
+	Bulan       int                  `json:"bulan"`
+	Tahun       int                  `json:"tahun"`
+	JumlahHari  int                  `json:"jumlah_hari"`
+	Pendapatan  map[string][]float64 `json:"pendapatan"`
 	Pengeluaran map[string][]float64 `json:"pengeluaran"`
-	Kas        map[string][]float64 `json:"kas"`
-	Statistik  map[string][]float64 `json:"statistik"`
+	Kas         map[string][]float64 `json:"kas"`
+	Statistik   map[string][]float64 `json:"statistik"`
 }
 
 // NewLaporanBulananResponse menyiapkan slice kosong (panjang = jumlahHari)

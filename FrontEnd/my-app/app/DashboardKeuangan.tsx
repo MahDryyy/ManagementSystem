@@ -466,16 +466,6 @@ export default function DashboardKeuangan() {
         </FadeIn>
       </div>
 
-      <FadeIn delayMs={400} className="mt-4">
-        <HistoriList
-          title="Histori Pengeluaran"
-          items={historiPengeluaran}
-          loading={loading}
-          emptyLabel="Belum ada pengeluaran."
-          onViewAll={() => setShowFullPengeluaran(true)}
-        />
-      </FadeIn>
-
       <FadeIn delayMs={440} className="mt-4">
         <div ref={pengeluaranRef}>
           <HistoriPengeluaranTable

@@ -23,14 +23,14 @@ const (
 )
 
 type PendapatanAkunRow struct {
-	Tanggal      time.Time `json:"tanggal"`
-	NoRawat      string    `json:"no_rawat"`
-	NoNota       string    `json:"no_nota"`
-	NmPasien     string    `json:"nm_pasien"`
-	CaraBayar    string    `json:"cara_bayar"`
-	AkunRekening string    `json:"akun_rekening"`
-	Total        float64   `json:"total"`
-	JenisRawat   string    `json:"jenis_rawat"`
+	Tanggal      time.Time      `json:"tanggal"`
+	NoRawat      string         `json:"no_rawat"`
+	NoNota       string         `json:"no_nota"`
+	NmPasien     string         `json:"nm_pasien"`
+	CaraBayar    string         `json:"cara_bayar"`
+	AkunRekening string         `json:"akun_rekening"`
+	Total        float64        `json:"total"`
+	JenisRawat   string         `json:"jenis_rawat"`
 	Rincian      []RincianBayar `json:"rincian,omitempty"`
 }
 
@@ -50,14 +50,14 @@ type StrukItem struct {
 }
 
 type StrukResponse struct {
-	NoRawat      string        `json:"no_rawat"`
-	NamaPasien   string        `json:"nama_pasien"`
-	NoRkmMedis   string        `json:"no_rkm_medis"`
-	CaraBayar    string        `json:"cara_bayar"`
-	Tanggal      string        `json:"tanggal"`
-	Items        []StrukItem   `json:"items"`
-	Subtotal     []RincianBayar `json:"subtotal"`
-	GrandTotal   float64       `json:"grand_total"`
+	NoRawat    string         `json:"no_rawat"`
+	NamaPasien string         `json:"nama_pasien"`
+	NoRkmMedis string         `json:"no_rkm_medis"`
+	CaraBayar  string         `json:"cara_bayar"`
+	Tanggal    string         `json:"tanggal"`
+	Items      []StrukItem    `json:"items"`
+	Subtotal   []RincianBayar `json:"subtotal"`
+	GrandTotal float64        `json:"grand_total"`
 }
 
 type PendapatanAkunFilter struct {
@@ -133,11 +133,11 @@ type HistoriResponse struct {
 }
 
 type HistoriPengeluaranRow struct {
-	NoKeluar  string  `json:"no_keluar"`
-	Tanggal   string  `json:"tanggal"`
-	Kategori  string  `json:"kategori"`
-	Keterangan string `json:"keterangan"`
-	Biaya     float64 `json:"biaya"`
+	NoKeluar   string  `json:"no_keluar"`
+	Tanggal    string  `json:"tanggal"`
+	Kategori   string  `json:"kategori"`
+	Keterangan string  `json:"keterangan"`
+	Biaya      float64 `json:"biaya"`
 }
 
 type HistoriPengeluaranFilter struct {
@@ -150,9 +150,9 @@ type HistoriPengeluaranFilter struct {
 
 type HistoriPengeluaranResponse struct {
 	Data   []HistoriPengeluaranRow `json:"data"`
-	Total  int                   `json:"total"`
-	Limit  int                   `json:"limit"`
-	Offset int                   `json:"offset"`
+	Total  int                     `json:"total"`
+	Limit  int                     `json:"limit"`
+	Offset int                     `json:"offset"`
 }
 
 type KategoriPengeluaranItem struct {

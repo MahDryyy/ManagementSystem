@@ -161,19 +161,6 @@ export default function DashboardObat() {
         </div>
 
         <div className="relative shrink-0">
-          <button
-            type="button"
-            onClick={() => setShowNotifications((v) => !v)}
-            className="relative rounded-xl border border-[#e8eaed] bg-white p-2.5 shadow-sm transition-colors hover:bg-zinc-50"
-            aria-label="Notifikasi"
-          >
-            <Bell className="h-5 w-5 text-zinc-600" />
-            {unreadCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-semibold text-white">
-                {unreadCount}
-              </span>
-            )}
-          </button>
 
           {showNotifications && (
             <>

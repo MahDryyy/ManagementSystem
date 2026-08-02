@@ -1,0 +1,153 @@
+name: ManagementSystem CI
+
+on:
+  push:
+    branches: [staging, production]
+    paths: ["ManagementSystem/**"]
+  pull_request:
+    branches: [staging, production]
+    paths: ["ManagementSystem/**"]
+
+
+permissions:
+  contents: read
+  pull-requests: read
+  packages: write
+
+concurrency:
+  group: managementsystem-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ======================== DETECT CHANGES ========================
+  changes:
+    name: Detect changed folders
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'ManagementSystem/BackEnd/**'
+            frontend:
+              - 'ManagementSystem/FrontEnd/**'
+
+  # ======================== BACKEND ========================
+  backend:
+    name: Go Test & Vet
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ManagementSystem/BackEnd
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: ManagementSystem/BackEnd/go.mod
+          cache-dependency-path: ManagementSystem/BackEnd/go.sum
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test -v -cover -count=1 ./...
+
+  # ======================== FRONTEND ========================
+  frontend:
+    name: Next.js Lint & Build
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ManagementSystem/FrontEnd/my-app
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ManagementSystem/FrontEnd/my-app/package-lock.json
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8080
+
+  # ======================== PUSH IMAGES (production only) ========================
+  # Build image di CI (bukan di server produksi) supaya server tinggal `docker
+  # compose pull` — server nggak perlu nanggung beban compile Go/build Next.js
+  # tiap deploy, dan downtime pas ganti versi jadi jauh lebih singkat.
+  push-backend:
+    name: Push Backend Image
+    needs: [changes, backend]
+    if: |
+      needs.changes.outputs.backend == 'true' && needs.backend.result == 'success' &&
+      github.ref == 'refs/heads/production' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: ./ManagementSystem/BackEnd
+          file: ./ManagementSystem/BackEnd/dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/managementsystem-backend:latest
+            ${{ secrets.DOCKER_USERNAME }}/managementsystem-backend:${{ github.sha }}
+          cache-from: type=gha,scope=managementsystem-backend
+          cache-to: type=gha,mode=max,scope=managementsystem-backend
+
+  push-frontend:
+    name: Push Frontend Image
+    needs: [changes, frontend]
+    if: |
+      needs.changes.outputs.frontend == 'true' && needs.frontend.result == 'success' &&
+      github.ref == 'refs/heads/production' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: ./ManagementSystem/FrontEnd/my-app
+          file: ./ManagementSystem/FrontEnd/my-app/dockerfile
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=http://localhost:8080
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/managementsystem-frontend:latest
+            ${{ secrets.DOCKER_USERNAME }}/managementsystem-frontend:${{ github.sha }}
+          cache-from: type=gha,scope=managementsystem-frontend
+          cache-to: type=gha,mode=max,scope=managementsystem-frontend

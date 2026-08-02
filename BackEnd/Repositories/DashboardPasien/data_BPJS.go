@@ -134,7 +134,6 @@ func (r *dashboardRepository) buildBPJSPoliWhere(
 	return " WHERE " + strings.Join(conds, " AND "), args
 }
 
-
 func (r *dashboardRepository) GetBPJSPoliDataCount(filter ModelsPasien.BPJSPoliFilter) (int, error) {
 	where, args := r.buildBPJSPoliWhere(filter)
 
